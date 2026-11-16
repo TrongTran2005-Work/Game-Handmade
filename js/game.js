@@ -3,6 +3,7 @@
   const cfg = window.LAST_BLOOM_CONFIG;
   const $ = id => document.getElementById(id);
   const gameScreen = $("gameScreen");
+  const towerElement = $("baseTower");
   const grid = $("battleGrid");
   const road = $("roadZone");
   const unitsLayer = $("unitsLayer");
@@ -21,6 +22,9 @@
   const modSkillFields = $("modSkillFields");
   const modEffectFields = $("modEffectFields");
   const modError = $("modError");
+  const idleAnimationFrequencyInput = $("idleAnimationFrequency");
+  const idleAnimationFrequencyValue = $("idleAnimationFrequencyValue");
+  const idleAnimationStatus = $("idleAnimationStatus");
   const upgradeOverlay = $("upgradeOverlay");
 
   document.documentElement.style.setProperty("--grid-width", `${cfg.gridWidth}%`);
@@ -29,13 +33,61 @@
   document.documentElement.style.setProperty("--grid-rows", cfg.rows);
   document.documentElement.style.setProperty("--road-height", `${cfg.roadHeight}%`);
   document.documentElement.style.setProperty("--grid-top", `${cfg.gridTop}%`);
+  document.documentElement.style.setProperty("--tower-left",
+    `${(100 - cfg.gridWidth) / 2 + cfg.baseTower.col * cfg.gridWidth / cfg.columns}%`);
+  document.documentElement.style.setProperty("--tower-top", `${cfg.baseTower.row * 100 / cfg.rows}%`);
+  document.documentElement.style.setProperty("--tower-width",
+    `${cfg.baseTower.columns * cfg.gridWidth / cfg.columns}%`);
+  document.documentElement.style.setProperty("--tower-height", `${cfg.baseTower.rows * 100 / cfg.rows}%`);
+  towerElement.querySelector("img").src = cfg.baseTower.asset;
 
   const unitDefs = new Map(cfg.unitTypes.map(unit => [unit.id, unit]));
   const monsterDefs = new Map(cfg.monsters.map(monster => [monster.id, monster]));
   const skillDefs = new Map(cfg.skills.map(skill => [skill.id, skill]));
   const effectDefs = new Map(cfg.effects.map(effect => [effect.id, effect]));
   const modStorageKey = "lastBloomModSettings";
+  const idleAnimationStorageKey = "lastBloomIdleAnimationFrequency";
   const upgradeMultipliers = { hp: 1.1, atk: 1.06, def: 1.08, sa: 1.1, rc: 1.1 };
+
+  function applyIdleAnimationFrequency(frequency) {
+    const roundedFrequency = Math.round(frequency * 10) / 10;
+    if (!Number.isFinite(frequency) || roundedFrequency < 0.3 || roundedFrequency > 3) {
+      throw new Error("Tần suất nhấp nhô phải từ 0,3 đến 3 lần/giây.");
+    }
+    idleAnimationFrequencyInput.value = String(roundedFrequency);
+    idleAnimationFrequencyValue.textContent = Number.isInteger(roundedFrequency)
+      ? String(roundedFrequency)
+      : roundedFrequency.toFixed(1).replace(".", ",");
+    document.documentElement.style.setProperty("--idle-bob-duration", `${1000 / roundedFrequency}ms`);
+  }
+  function loadIdleAnimationFrequency() {
+    try {
+      const saved = localStorage.getItem(idleAnimationStorageKey);
+      if (saved === null) return 2;
+      const savedFrequency = Number(saved);
+      if (!Number.isFinite(savedFrequency)) {
+        throw new Error("Tần suất nhấp nhô đã lưu không hợp lệ.");
+      }
+      const frequency = Math.round(savedFrequency * 10) / 10;
+      if (Number.isInteger(savedFrequency) && savedFrequency >= 1 && savedFrequency <= 10) {
+        const migratedFrequency = Math.min(3, frequency);
+        if (migratedFrequency !== savedFrequency) {
+          try {
+            localStorage.setItem(idleAnimationStorageKey, String(migratedFrequency));
+          } catch (error) {
+            console.warn("Không thể cập nhật tần suất nhấp nhô cũ.", error);
+          }
+        }
+        return migratedFrequency;
+      }
+      if (frequency < 0.3 || frequency > 3) throw new Error("Tần suất nhấp nhô đã lưu không hợp lệ.");
+      return frequency;
+    } catch (error) {
+      console.warn("Không thể tải tần suất nhấp nhô đã lưu; dùng mặc định 2 lần/giây.", error);
+      return 2;
+    }
+  }
+  applyIdleAnimationFrequency(loadIdleAnimationFrequency());
 
   function readModSettings() {
     return {
@@ -225,7 +277,13 @@
         y: cfg.gridTop + ((entity.row + 1) * (100 - cfg.gridTop) / cfg.rows)
       };
     }
-    if (entity.kind === "base") return { x: cellCenterX(entity.lane), y: 97 };
+    if (entity.kind === "base") {
+      const tower = cfg.baseTower;
+      return {
+        x: ((100 - cfg.gridWidth) / 2) + ((tower.col + tower.columns / 2) * cfg.gridWidth / cfg.columns),
+        y: cfg.gridTop + ((tower.row + tower.rows / 2) * (100 - cfg.gridTop) / cfg.rows)
+      };
+    }
     return {
       x: cellCenterX(entity.lane),
       y: cfg.roadHeight * (entity.top + entity.height * 0.72) / 100
@@ -246,8 +304,14 @@
   function occupied(col, row) {
     return state.units.some(unit => unit.col === col && row <= unit.row + 1 && row + 1 >= unit.row);
   }
+  function overlapsTower(col, row) {
+    const tower = cfg.baseTower;
+    return col >= tower.col && col < tower.col + tower.columns &&
+      row < tower.row + tower.rows && row + 1 >= tower.row;
+  }
   function canPlace(col, row) {
-    return col >= 0 && col < cfg.columns && row >= 0 && row + 1 < cfg.rows && !occupied(col, row);
+    return col >= 0 && col < cfg.columns && row >= 0 && row + 1 < cfg.rows &&
+      !occupied(col, row) && !overlapsTower(col, row);
   }
 
   const cellEls = [];
@@ -352,8 +416,8 @@
     [
       ["COIN bắt đầu", cfg.coinStart, "coinStart"],
       ["COIN hiện tại", state.coins, "currentCoin"],
-      ["Máu căn cứ tối đa", cfg.baseHp, "baseHp"],
-      ["Máu căn cứ hiện tại", state.baseHp, "currentBaseHp"]
+      ["Máu trụ tối đa", cfg.baseHp, "baseHp"],
+      ["Máu trụ hiện tại", state.baseHp, "currentBaseHp"]
     ].forEach(([label, value, setting]) => addModField(modGlobalFields, label, value, setting));
     const valueLabels = { heal: "Lượng hồi HP", burst: "Sát thương", freeze: "Thời gian choáng (giây)", coin: "COIN nhận" };
     cfg.skills.forEach(skill => {
@@ -438,7 +502,7 @@
     });
     if (!isValidModSettings(next) || !Number.isFinite(currentCoin) || currentCoin < 0 ||
         !Number.isFinite(currentBaseHp) || currentBaseHp < 0 || currentBaseHp > next.baseHp) {
-      modError.textContent = "Giá trị không hợp lệ. COIN và thông số kỹ năng phải từ 0 trở lên; máu căn cứ hiện tại không vượt mức tối đa.";
+      modError.textContent = "Giá trị không hợp lệ. COIN và thông số kỹ năng phải từ 0 trở lên; máu trụ hiện tại không vượt mức tối đa.";
       return;
     }
     const now = performance.now();
@@ -524,6 +588,7 @@
     const def = unitDefs.get(state.selected);
     if (state.coins < def.cost) { showMessage("Không đủ COIN"); return; }
     if (row + 1 >= cfg.rows) { showMessage("Tướng cần đúng 2 ô theo chiều dọc"); return; }
+    if (overlapsTower(col, row)) { showMessage("Không thể bố trí tướng lên vị trí của trụ"); return; }
     if (!canPlace(col, row)) { showMessage("Vị trí này đã có tướng hoặc không hợp lệ"); return; }
     state.coins -= def.cost;
     const now = performance.now();
@@ -724,12 +789,16 @@
     }
     return { penetration, criticalMultiplier, activeSkill };
   }
-  function createProjectile(owner, target, damage, definition, now, asset, special, applyDamage = true) {
-    const start = pointFor(owner), end = pointFor(target);
+  function projectileDuration(start, end, definition) {
     const distance = Math.hypot(
       (end.x - start.x) * gameScreen.clientWidth / 100,
       (end.y - start.y) * gameScreen.clientHeight / 100
     );
+    return Math.max(280, distance /
+      Math.max(100, definition && definition.speed ? definition.speed : 420) * 1000);
+  }
+  function createProjectile(owner, target, damage, definition, now, asset, special, applyDamage = true) {
+    const start = pointFor(owner), end = pointFor(target);
     const element = document.createElement("img");
     element.className = `battle-projectile${special ? " ultimate-projectile" : ""}`;
     element.alt = "";
@@ -743,11 +812,30 @@
     const projectile = {
       owner, target, start, end, damage, definition, asset, special, startedAt: now,
       applyDamage, element, elapsed: 0, lastFrame: now,
-      duration: Math.max(280, distance /
-        Math.max(100, definition && definition.speed ? definition.speed : 420) * 1000)
+      duration: projectileDuration(start, end, definition)
     };
     state.projectiles.push(projectile);
     projectile.frameId = requestAnimationFrame(frameTime => updateProjectile(projectile, frameTime));
+  }
+  function retargetBaseProjectile(projectile, now) {
+    if (!state.waveActive || state.paused || projectile.owner.kind !== "enemy" ||
+        projectile.target.kind !== "base") return;
+    const target = selectTarget(projectile.owner);
+    if (!target) return;
+    projectile.start = {
+      x: Number.parseFloat(projectile.element.style.left),
+      y: Number.parseFloat(projectile.element.style.top)
+    };
+    projectile.target = target;
+    projectile.end = pointFor(target);
+    const attacker = {
+      ...projectile.owner,
+      atk: projectile.special ? projectile.owner.specialDamage : projectile.owner.atk
+    };
+    projectile.damage = damageAmount(attacker, target, 0, 1, now);
+    projectile.elapsed = 0;
+    projectile.lastFrame = now;
+    projectile.duration = projectileDuration(projectile.start, projectile.end, projectile.definition);
   }
   function updateProjectile(projectile, frameTime) {
     if (!state.projectiles.includes(projectile)) return;
@@ -756,6 +844,7 @@
       state.projectiles = state.projectiles.filter(item => item !== projectile);
       return;
     }
+    retargetBaseProjectile(projectile, frameTime);
     if (state.waveActive && !state.paused) {
       projectile.elapsed += Math.min(50, Math.max(0, frameTime - projectile.lastFrame));
     }
@@ -867,7 +956,9 @@
   }
   function updateHud() {
     $("coinValue").textContent = `COIN ${Math.floor(state.coins)}`;
-    $("baseValue").textContent = `CĂN CỨ ${Math.ceil(state.baseHp / cfg.baseHp * 100)}%`;
+    const towerPercent = Math.max(0, state.baseHp / cfg.baseHp * 100);
+    $("baseValue").textContent = `TRỤ ${Math.ceil(towerPercent)}%`;
+    $("towerHealth").style.width = `${towerPercent}%`;
     $("waveValue").textContent = `ĐỢT ${state.wave}`;
     updateWaveButton();
   }
@@ -897,13 +988,13 @@
       state.paused = false;
       state.countdownUntil = 0;
       updateWaveButton();
-      showMessage("CĂN CỨ ĐÃ THẤT THỦ", 5000);
+      showMessage("TRỤ ĐÃ BỊ PHÁ HỦY", 5000);
       setHint(`Kết thúc · Kỷ lục ${state.bestWave} đợt`);
     }
   }
   function selectTarget(entity) {
     if (entity.kind === "enemy") {
-      return state.units.filter(unit => alive(unit) && Math.abs(unit.col - entity.lane) <= (unitDefs.get(unit.type).range || 4))
+      return state.units.filter(alive)
         .sort((a, b) => Math.abs(a.col - entity.lane) - Math.abs(b.col - entity.lane))[0];
     }
     const def = unitDefs.get(entity.type);
@@ -1073,6 +1164,17 @@
   modOverlay.addEventListener("click", event => { if (event.target === modOverlay) setModOpen(false); });
   modForm.addEventListener("submit", submitModForm);
   $("modReset").addEventListener("click", resetModSettings);
+  idleAnimationFrequencyInput.addEventListener("input", () => {
+    const frequency = Number(idleAnimationFrequencyInput.value);
+    applyIdleAnimationFrequency(frequency);
+    try {
+      localStorage.setItem(idleAnimationStorageKey, String(frequency));
+      idleAnimationStatus.textContent = "Đã lưu tự động.";
+    } catch (error) {
+      console.warn("Không thể lưu tần suất nhấp nhô.", error);
+      idleAnimationStatus.textContent = "Không thể lưu cài đặt; thay đổi chỉ có hiệu lực trong phiên này.";
+    }
+  });
   $("upgradeClose").addEventListener("click", closeUpgrade);
   $("upgradeApply").addEventListener("click", applyUpgrade);
   upgradeOverlay.addEventListener("click", event => { if (event.target === upgradeOverlay) closeUpgrade(); });

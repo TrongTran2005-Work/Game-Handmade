@@ -33,6 +33,7 @@ Bản game HTML5/CSS3/JavaScript chạy trực tiếp trên trình duyệt, khô
 - Tướng và quái hỗ trợ chỉnh HP, ATK, SA, RC, DEF, COIN, kỹ năng trang bị và thông số bổ sung; quái có thêm SPAWN_CHANCE và SPAWN_QUANTITY tối thiểu/tối đa.
 - Mod được lưu độc lập, có thể bật/tắt, sửa hoặc gỡ. Cấu hình mod dùng JSON với các nhóm `resources`, `characters`, `monsters`, `skills`; chỉ các chỉ số gameplay được phép mới được chấp nhận.
 - **GAME SETTINGS** giữ các điều chỉnh COIN, căn cứ, kỹ năng chủ động và hiệu ứng. Thông số đã lưu không ghi đè cấu hình gốc; các mục mặc định đã xóa có thể khôi phục.
+- Tần suất hiệu ứng nhấp nhô của tướng và quái chỉnh được từ 0,3–3 lần/giây trong GAME SETTINGS; lựa chọn được áp dụng tức thì và lưu tự động.
 - Dữ liệu tùy chỉnh lưu riêng trong Local Storage của trình duyệt. Chọn **ÁP DỤNG CHO TRẬN MỚI** để tải lại và nạp cấu hình; nếu đang có trận, game sẽ hỏi xác nhận trước khi tải lại.
 
 ## Gameplay và hiệu ứng
@@ -42,7 +43,9 @@ Bản game HTML5/CSS3/JavaScript chạy trực tiếp trên trình duyệt, khô
 - COIN khởi đầu 2500; nhận thêm khi hạ quái và dọn đợt, dùng để gọi tướng, nâng cấp và dùng skill.
 - Có 12 hiệu ứng: STUN, LIFESTEAL, ARMOR_REDUCTION, HEALING_REDUCTION, SLOW, TEAM_HEAL, CRITICAL, ARMOR_PENETRATION, SLOW_RESISTANCE, CLR, RATK, RDEF.
 - Hiệu ứng cùng loại không cộng dồn: hiệu lực mạnh hơn được giữ và thời hạn được làm mới. STUN chặn hành động; hồi máu bị giới hạn bởi HP tối đa.
-- Quái xuất hiện trên đường, không di chuyển; nếu không có tướng chặn cùng làn thì đánh căn cứ.
+- Quái xuất hiện trên đường và không di chuyển.
+- Trụ phe người dùng ảnh `assets/town/hometown.gif`, chiếm 2 cột × 2 hàng ở giữa hàng 7–8 của lưới (cột 6–7). Chỉ 4 ô này bị chặn bố trí tướng.
+- Quái phe DEMON luôn ưu tiên tấn công tướng HUMAN còn sống trên toàn sân, không phụ thuộc khoảng cách làn. Chỉ khi không còn tướng HUMAN chúng mới đánh trụ; nếu tướng mới được bố trí trong lúc đòn đang bay về trụ, projectile sẽ chuyển hướng sang tướng.
 - Sau mỗi đợt, ATK/DEF quái tăng cộng dồn 10%; một thuộc tính quái được chọn ngẫu nhiên tăng thêm 10%. Căn cứ hồi 3% HP tối đa.
 - Có đếm ngược 30 giây, **SKIP**, tạm dừng, kết thúc và chơi lại.
 - Lưu kỷ lục đợt cao nhất bằng Local Storage.

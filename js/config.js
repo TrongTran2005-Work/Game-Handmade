@@ -5,6 +5,7 @@ window.LAST_BLOOM_CONFIG = {
   gridHeight: 100,
   roadHeight: 28.5,
   gridTop: 28.5,
+  baseTower: { asset: "assets/town/hometown.gif", col: 5, row: 6, columns: 2, rows: 2 },
   coinStart: 2500,
   baseHp: 100,
   baseRecoveryPercent: 3,
@@ -15,11 +16,11 @@ window.LAST_BLOOM_CONFIG = {
   coinPerRound: 100,
   randomMonsterScalingAttributes: ["hp", "atk", "sa", "rc", "def"],
   monsters: [
-    { id: "M1", name: "Alice", faction: "DEMON", asset: "assets/character/M1.png", normalAsset: "assets/character/M1_N.png", ultimateAsset: "assets/character/M1_U.png", hp: 3000, atk: 5, sa: 0.35, rc: 0, def: 5, ultimateDamage: 15, ultimateInterval: 5, skills: ["STUN"], spawnChance: 0.3, spawnMin: 1, spawnMax: 3, coinReward: 20 },
-    { id: "M2", name: "Snake Queen", faction: "DEMON", asset: "assets/character/M2.png", normalAsset: "assets/character/M2_N.png", ultimateAsset: "assets/character/M2_U.png", hp: 5000, atk: 8, sa: 0.45, rc: 5, def: 8, ultimateDamage: 20, ultimateInterval: 3, skills: ["SLOW", "HEALING_REDUCTION"], spawnChance: 0.25, spawnMin: 1, spawnMax: 2, coinReward: 35 },
-    { id: "M3", name: "Dragon of Paint", faction: "DEMON", asset: "assets/character/M3.png", normalAsset: "assets/character/M3_N.png", ultimateAsset: "assets/character/M3_U.png", hp: 12000, atk: 15, sa: 0.5, rc: 15, def: 15, ultimateDamage: 45, ultimateInterval: 10, skills: ["ARMOR_REDUCTION", "RDEF"], spawnChance: 0.2, spawnMin: 1, spawnMax: 2, coinReward: 60 },
-    { id: "M4", name: "Gradus", faction: "DEMON", asset: "assets/character/M4.png", normalAsset: "assets/character/M4_N.png", ultimateAsset: "assets/character/M4_U.png", hp: 25000, atk: 25, sa: 0.35, rc: 25, def: 25, ultimateDamage: 75, ultimateInterval: 15, skills: ["RATK", "ARMOR_PENETRATION"], spawnChance: 0.15, spawnMin: 1, spawnMax: 1, coinReward: 100 },
-    { id: "M5", name: "Relortans", faction: "DEMON", asset: "assets/character/M5.png", normalAsset: "assets/character/M5_N.png", ultimateAsset: "assets/character/M5_U.png", hp: 40000, atk: 35, sa: 0.3, rc: 35, def: 35, ultimateDamage: 1000, ultimateInterval: 20, skills: ["STUN", "CRITICAL"], spawnChance: 0.1, spawnMin: 1, spawnMax: 1, coinReward: 150 }
+    { id: "M1", name: "Alice", faction: "DEMON", asset: "assets/character/M1.png", normalAsset: "assets/character/M1_N.png", ultimateAsset: "assets/character/M1_U.png", hp: 3000, atk: 5, sa: 0.95, rc: 0, def: 5, ultimateDamage: 15, ultimateInterval: 5, skills: ["STUN"], spawnChance: 0.3, spawnMin: 1, spawnMax: 3, coinReward: 20 },
+    { id: "M2", name: "Snake Queen", faction: "DEMON", asset: "assets/character/M2.png", normalAsset: "assets/character/M2_N.png", ultimateAsset: "assets/character/M2_U.png", hp: 5000, atk: 8, sa: 1.96, rc: 5, def: 8, ultimateDamage: 20, ultimateInterval: 3, skills: ["SLOW", "HEALING_REDUCTION"], spawnChance: 0.25, spawnMin: 1, spawnMax: 2, coinReward: 35 },
+    { id: "M3", name: "Dragon of Paint", faction: "DEMON", asset: "assets/character/M3.png", normalAsset: "assets/character/M3_N.png", ultimateAsset: "assets/character/M3_U.png", hp: 12000, atk: 15, sa: 1.75, rc: 15, def: 15, ultimateDamage: 45, ultimateInterval: 10, skills: ["ARMOR_REDUCTION", "RDEF"], spawnChance: 0.2, spawnMin: 1, spawnMax: 2, coinReward: 60 },
+    { id: "M4", name: "Gradus", faction: "DEMON", asset: "assets/character/M4.png", normalAsset: "assets/character/M4_N.png", ultimateAsset: "assets/character/M4_U.png", hp: 25000, atk: 25, sa: 1.85, rc: 25, def: 25, ultimateDamage: 75, ultimateInterval: 15, skills: ["RATK", "ARMOR_PENETRATION"], spawnChance: 0.15, spawnMin: 1, spawnMax: 1, coinReward: 100 },
+    { id: "M5", name: "Relortans", faction: "DEMON", asset: "assets/character/M5.png", normalAsset: "assets/character/M5_N.png", ultimateAsset: "assets/character/M5_U.png", hp: 40000, atk: 35, sa: 1.73, rc: 35, def: 35, ultimateDamage: 1000, ultimateInterval: 20, skills: ["STUN", "CRITICAL"], spawnChance: 0.1, spawnMin: 1, spawnMax: 1, coinReward: 150 }
   ],
   unitTypes: [
     { id: "C1", name: "Magic Boy", faction: "HUMAN", asset: "assets/character/C1.png", normalAsset: "assets/character/C1_N.png", ultimateAsset: "assets/character/C1_U.png", cost: 80, hp: 115, atk: 20, sa: 0.8, rc: 250, def: 8, specialDamage: 120, specialInterval: 5, range: 5, skillIds: ["CRITICAL", "ARMOR_PENETRATION"] },
@@ -28,7 +29,7 @@ window.LAST_BLOOM_CONFIG = {
     { id: "C4", name: "Master Michel", faction: "HUMAN", asset: "assets/character/C4.png", normalAsset: "assets/character/C4_N.png", ultimateAsset: "assets/character/C4_U.png", cost: 150, hp: 125, atk: 20, sa: 0.95, rc: 195, def: 6, specialDamage: 210, specialInterval: 7, range: 6, skillIds: ["TEAM_HEAL", "SLOW_RESISTANCE", "CLR"] },
     { id: "C5", name: "David Dame", faction: "HUMAN", asset: "assets/character/C5.png", normalAsset: "assets/character/C5_N.png", ultimateAsset: "assets/character/C5_U.png", cost: 50, hp: 230, atk: 20, sa: 0.65, rc: 275, def: 22, specialDamage: 135, specialInterval: 2, range: 2, skillIds: ["STUN", "RATK"], additionalValue: 150 }
   ],
-  cardSlots: ["C1", null, null, "C2", "C3", null, null, null, "C4", "C5"],
+  cardSlots: ["C1", "C2", "C3", "C4", "C5", null, null, null,null, null],
   effects: [
     { id: "STUN", name: "Choáng", deployment: "PROJECTILE", userFaction: "BOTH", targetFaction: "OPPONENT", impact: "TARGET", effect: "STUN", value: 2, duration: 2, cooldown: 7, chance: 0.35, speed: 420, size: 14, radius: 0 },
     { id: "LIFESTEAL", name: "Hút máu", deployment: "PROJECTILE", userFaction: "BOTH", targetFaction: "OPPONENT", impact: "TARGET", effect: "LIFESTEAL", value: 25, duration: 0, cooldown: 0, chance: 1, speed: 420, size: 12, radius: 0 },

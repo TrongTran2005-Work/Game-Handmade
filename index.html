@@ -14,6 +14,10 @@
       <button class="mod-toggle" id="modToggle" type="button" aria-haspopup="dialog" aria-controls="modOverlay">⚙ SETTINGS</button>
       <div class="road-zone" id="roadZone" aria-label="Khu vực xuất hiện zombie"></div>
       <div class="battle-zone" id="battleZone" aria-label="Khu vực chiến đấu">
+        <div class="base-tower" id="baseTower" role="img" aria-label="Trụ phe người">
+          <img src="assets/town/hometown.gif" alt="Trụ phe người">
+          <span class="tower-health" aria-hidden="true"><i id="towerHealth"></i></span>
+        </div>
         <div class="battle-grid" id="battleGrid" aria-label="Lưới chiến đấu 12 cột 8 hàng"></div>
         <div class="units-layer" id="unitsLayer" aria-label="Nhân vật trên sân"></div>
       </div>
@@ -83,7 +87,7 @@
         <section class="settings-page" id="gameSettingsPanel" hidden>
           <form id="modForm">
             <section class="mod-section">
-              <h2>TÀI NGUYÊN & CĂN CỨ</h2>
+              <h2>TÀI NGUYÊN & TRỤ PHE NGƯỜI</h2>
               <div class="mod-fields" id="modGlobalFields"></div>
             </section>
             <section class="mod-section">
@@ -100,6 +104,16 @@
               <button class="mod-apply" type="submit">ÁP DỤNG</button>
             </div>
           </form>
+          <section class="mod-section" aria-labelledby="idleAnimationTitle">
+            <h2 id="idleAnimationTitle">HIỆU ỨNG NHÂN VẬT</h2>
+            <label class="mod-field animation-frequency" for="idleAnimationFrequency">
+              <span>Nhịp nhấp nhô: <output id="idleAnimationFrequencyValue" for="idleAnimationFrequency">2</output> lần/giây</span>
+              <input id="idleAnimationFrequency" type="range" min="0.3" max="3" step="0.1" value="2">
+            </label>
+            <p class="animation-setting-help" id="idleAnimationStatus" role="status" aria-live="polite">
+              Áp dụng cho tướng và quái; thay đổi được lưu tự động.
+            </p>
+          </section>
         </section>
       </section>
     </div>
@@ -132,7 +146,7 @@
       <div class="center-controls">
         <div class="resource-line">
           <span id="coinValue">COIN 2500</span>
-          <span id="baseValue">CĂN CỨ 100%</span>
+          <span id="baseValue">TRỤ 100%</span>
           <span id="waveValue">ĐỢT 0</span>
         </div>
         <span class="round-status" id="roundStatus">SẴN SÀNG</span>
