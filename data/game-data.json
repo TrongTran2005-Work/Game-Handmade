@@ -1,0 +1,69 @@
+{
+  "resources": {
+    "coinStart": 2500,
+    "baseHp": 100,
+    "baseRecoveryPercent": 3,
+    "roundCountdownSeconds": 30
+  },
+  "progression": {
+    "coinPerRound": 100,
+    "upgradeCost": 150,
+    "upgradeCostStep": 75,
+    "upgradePercent": {
+      "hp": 10,
+      "atk": 6,
+      "def": 8,
+      "sa": 10,
+      "rc": 10
+    },
+    "postRoundCommonScalingPercent": {
+      "atk": 10,
+      "def": 10
+    },
+    "postRoundRandomScalingPercent": 10
+  },
+  "grid": {
+    "columns": 12,
+    "rows": 8,
+    "unitFootprint": {
+      "columns": 1,
+      "rows": 2
+    }
+  },
+  "cardSlots": ["C1", null, null, "C2", "C3", null, null, null, "C4", "C5"],
+  "unitTypes": [
+    { "id": "C1", "faction": "HUMAN", "name": "Magic Boy", "cost": 80, "hp": 115, "atk": 20, "sa": 0.8, "rc": 250, "def": 8, "specialDamage": 120, "specialInterval": 5, "skillIds": ["CRITICAL", "ARMOR_PENETRATION"] },
+    { "id": "C2", "faction": "HUMAN", "name": "Water Queen", "cost": 120, "hp": 95, "atk": 20, "sa": 1.11, "rc": 200, "def": 7, "specialDamage": 150, "specialInterval": 3, "skillIds": ["SLOW", "HEALING_REDUCTION"] },
+    { "id": "C3", "faction": "HUMAN", "name": "Iron Warrior", "cost": 75, "hp": 145, "atk": 20, "sa": 0.61, "rc": 150, "def": 18, "specialDamage": 105, "specialInterval": 4, "skillIds": ["LIFESTEAL", "ARMOR_REDUCTION", "RDEF"] },
+    { "id": "C4", "faction": "HUMAN", "name": "Master Michel", "cost": 150, "hp": 125, "atk": 20, "sa": 0.95, "rc": 195, "def": 6, "specialDamage": 210, "specialInterval": 7, "skillIds": ["TEAM_HEAL", "SLOW_RESISTANCE", "CLR"] },
+    { "id": "C5", "faction": "HUMAN", "name": "David Dame", "cost": 50, "hp": 230, "atk": 20, "sa": 0.65, "rc": 275, "def": 22, "specialDamage": 135, "specialInterval": 2, "skillIds": ["STUN", "RATK"] }
+  ],
+  "monsters": [
+    { "id": "M1", "faction": "DEMON", "name": "Alice", "hp": 3000, "atk": 5, "sa": 0.35, "rc": 0, "def": 5, "ultimateDamage": 15, "ultimateInterval": 5, "skills": ["STUN"], "spawnChance": 0.3, "spawnMin": 1, "spawnMax": 3, "coinReward": 20 },
+    { "id": "M2", "faction": "DEMON", "name": "Snake Queen", "hp": 5000, "atk": 8, "sa": 0.45, "rc": 5, "def": 8, "ultimateDamage": 20, "ultimateInterval": 3, "skills": ["SLOW", "HEALING_REDUCTION"], "spawnChance": 0.25, "spawnMin": 1, "spawnMax": 2, "coinReward": 35 },
+    { "id": "M3", "faction": "DEMON", "name": "Dragon of Paint", "hp": 12000, "atk": 15, "sa": 0.5, "rc": 15, "def": 15, "ultimateDamage": 45, "ultimateInterval": 10, "skills": ["ARMOR_REDUCTION", "RDEF"], "spawnChance": 0.2, "spawnMin": 1, "spawnMax": 2, "coinReward": 60 },
+    { "id": "M4", "faction": "DEMON", "name": "Gradus", "hp": 25000, "atk": 25, "sa": 0.35, "rc": 25, "def": 25, "ultimateDamage": 75, "ultimateInterval": 15, "skills": ["RATK", "ARMOR_PENETRATION"], "spawnChance": 0.15, "spawnMin": 1, "spawnMax": 1, "coinReward": 100 },
+    { "id": "M5", "faction": "DEMON", "name": "Relortans", "hp": 40000, "atk": 35, "sa": 0.3, "rc": 35, "def": 35, "ultimateDamage": 1000, "ultimateInterval": 20, "skills": ["STUN", "CRITICAL"], "spawnChance": 0.1, "spawnMin": 1, "spawnMax": 1, "coinReward": 150 }
+  ],
+  "effects": [
+    { "id": "STUN", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 2, "duration": 2, "cooldown": 7, "chance": 0.35 },
+    { "id": "LIFESTEAL", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 25, "duration": 0, "cooldown": 0, "chance": 1 },
+    { "id": "ARMOR_REDUCTION", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 25, "duration": 5, "cooldown": 8, "chance": 0.4 },
+    { "id": "HEALING_REDUCTION", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 35, "duration": 5, "cooldown": 8, "chance": 0.4 },
+    { "id": "SLOW", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 30, "duration": 4, "cooldown": 7, "chance": 0.4 },
+    { "id": "TEAM_HEAL", "deployment": "TARGET_POINT", "target": "HUMAN", "value": 75, "duration": 0, "cooldown": 8, "delay": 0.2, "radius": 2 },
+    { "id": "CRITICAL", "deployment": "PROJECTILE", "target": "OPPONENT", "chance": 0.2, "multiplier": 150 },
+    { "id": "ARMOR_PENETRATION", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 40, "cooldown": 7, "chance": 0.4 },
+    { "id": "SLOW_RESISTANCE", "deployment": "GLOBAL", "target": "USER_FACTION", "value": 40, "duration": 6, "cooldown": 10 },
+    { "id": "CLR", "deployment": "GLOBAL", "target": "USER_FACTION", "duration": 0, "cooldown": 12 },
+    { "id": "RATK", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 10, "duration": 4, "cooldown": 8, "chance": 0.4 },
+    { "id": "RDEF", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 10, "duration": 4, "cooldown": 8, "chance": 0.4 }
+  ],
+  "skills": [
+    { "id": "heal", "cost": 40, "cooldown": 18, "value": 55 },
+    { "id": "burst", "cost": 60, "cooldown": 22, "value": 75 },
+    { "id": "freeze", "cost": 50, "cooldown": 25, "value": 4 },
+    { "id": "coin", "cost": 0, "cooldown": 30, "value": 70 }
+  ],
+  "note": "Metadata mirrored from js/config.js; runtime balance, skill deployment, effects and assets are configured there."
+}

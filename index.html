@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#332d58">
+  <title>LAST BLOOM</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="game-shell" aria-label="LAST BLOOM">
+    <section class="game-screen" id="gameScreen">
+      <div class="battlefield-art" aria-hidden="true"></div>
+      <button class="mod-toggle" id="modToggle" type="button" aria-haspopup="dialog" aria-controls="modOverlay">⚙ MOD</button>
+      <div class="road-zone" id="roadZone" aria-label="Khu vực xuất hiện zombie"></div>
+      <div class="battle-zone" id="battleZone" aria-label="Khu vực chiến đấu">
+        <div class="battle-grid" id="battleGrid" aria-label="Lưới chiến đấu 12 cột 8 hàng"></div>
+        <div class="units-layer" id="unitsLayer" aria-label="Nhân vật trên sân"></div>
+      </div>
+      <div class="effects-layer" id="effectsLayer" aria-hidden="true"></div>
+      <div class="combat-message" id="combatMessage" aria-live="polite"></div>
+    </section>
+    <div class="mod-overlay" id="modOverlay" hidden>
+      <section class="mod-dialog" role="dialog" aria-modal="true" aria-labelledby="modTitle">
+        <div class="mod-heading">
+          <div><small>LAST BLOOM · CONFIG</small><h1 id="modTitle">MENU MOD</h1></div>
+          <button class="mod-close" id="modClose" type="button" aria-label="Đóng menu">×</button>
+        </div>
+        <form id="modForm">
+          <section class="mod-section">
+            <h2>TÀI NGUYÊN & CĂN CỨ</h2>
+            <div class="mod-fields" id="modGlobalFields"></div>
+          </section>
+          <section class="mod-section">
+            <h2>KỸ NĂNG CHỦ ĐỘNG</h2>
+            <div class="mod-skills" id="modSkillFields"></div>
+          </section>
+          <section class="mod-section">
+            <h2>HIỆU ỨNG TƯỚNG / QUÁI</h2>
+            <div class="mod-skills" id="modEffectFields"></div>
+          </section>
+          <p class="mod-error" id="modError" role="alert" aria-live="polite"></p>
+          <div class="mod-actions">
+            <button class="mod-reset" id="modReset" type="button">MẶC ĐỊNH</button>
+            <button class="mod-apply" type="submit">ÁP DỤNG</button>
+          </div>
+        </form>
+      </section>
+    </div>
+    <div class="mod-overlay" id="upgradeOverlay" hidden>
+      <section class="mod-dialog upgrade-dialog" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle">
+        <div class="mod-heading">
+          <div><small>CHIẾN BINH · NÂNG CẤP</small><h1 id="upgradeTitle">UPGRADE</h1></div>
+          <button class="mod-close" id="upgradeClose" type="button" aria-label="Đóng nâng cấp">×</button>
+        </div>
+        <p id="upgradeCharacter"></p>
+        <label class="mod-field" for="upgradeAttribute">Chọn thuộc tính
+          <select id="upgradeAttribute">
+            <option value="hp">HP +10%</option>
+            <option value="atk">ATK +6%</option>
+            <option value="def">DEF +8%</option>
+            <option value="sa">SA +10%</option>
+            <option value="rc">RC +10%</option>
+          </select>
+        </label>
+        <p id="upgradeCost"></p>
+        <p class="mod-error" id="upgradeError" role="alert"></p>
+        <div class="mod-actions">
+          <button class="mod-apply" id="upgradeApply" type="button">UPGRADE</button>
+        </div>
+      </section>
+    </div>
+
+    <footer class="command-bar">
+      <div class="unit-tray" id="unitTray" aria-label="Thanh chọn nhân vật"></div>
+      <div class="center-controls">
+        <div class="resource-line">
+          <span id="coinValue">COIN 2500</span>
+          <span id="baseValue">CĂN CỨ 100%</span>
+          <span id="waveValue">ĐỢT 0</span>
+        </div>
+        <span class="round-status" id="roundStatus">SẴN SÀNG</span>
+        <button class="wave-button" id="waveButton" type="button">START</button>
+        <button class="skip-button" id="skipButton" type="button" hidden>SKIP · 30</button>
+        <div class="helper-text" id="helperText">Chọn tướng rồi chọn ô trên sân</div>
+      </div>
+      <div class="skill-tray" id="skillTray" aria-label="Thanh kỹ năng"></div>
+    </footer>
+  </main>
+  <script src="js/config.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

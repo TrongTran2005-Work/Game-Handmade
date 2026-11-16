@@ -1,0 +1,19 @@
+{
+  "note": "Mẫu dữ liệu; cấu hình đang được đọc từ js/config.js",
+  "characters": [
+    {
+      "id": "C1",
+      "src": "assets/character/C1.png",
+      "col": 3,
+      "row": 2
+    }
+  ],
+  "zombies": [
+    {
+      "src": "assets/character/M1.png",
+      "x": 83,
+      "y": 2,
+      "height": 25
+    }
+  ]
+}
