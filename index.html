@@ -11,7 +11,7 @@
   <main class="game-shell" aria-label="LAST BLOOM">
     <section class="game-screen" id="gameScreen">
       <div class="battlefield-art" aria-hidden="true"></div>
-      <button class="mod-toggle" id="modToggle" type="button" aria-haspopup="dialog" aria-controls="modOverlay">⚙ MOD</button>
+      <button class="mod-toggle" id="modToggle" type="button" aria-haspopup="dialog" aria-controls="modOverlay">⚙ SETTINGS</button>
       <div class="road-zone" id="roadZone" aria-label="Khu vực xuất hiện zombie"></div>
       <div class="battle-zone" id="battleZone" aria-label="Khu vực chiến đấu">
         <div class="battle-grid" id="battleGrid" aria-label="Lưới chiến đấu 12 cột 8 hàng"></div>
@@ -21,30 +21,86 @@
       <div class="combat-message" id="combatMessage" aria-live="polite"></div>
     </section>
     <div class="mod-overlay" id="modOverlay" hidden>
-      <section class="mod-dialog" role="dialog" aria-modal="true" aria-labelledby="modTitle">
+      <section class="mod-dialog settings-dialog" role="dialog" aria-modal="true" aria-labelledby="modTitle">
         <div class="mod-heading">
-          <div><small>LAST BLOOM · CONFIG</small><h1 id="modTitle">MENU MOD</h1></div>
+          <div><small>LAST BLOOM · SETTINGS</small><h1 id="modTitle">MENU SETTINGS</h1></div>
           <button class="mod-close" id="modClose" type="button" aria-label="Đóng menu">×</button>
         </div>
-        <form id="modForm">
-          <section class="mod-section">
-            <h2>TÀI NGUYÊN & CĂN CỨ</h2>
-            <div class="mod-fields" id="modGlobalFields"></div>
-          </section>
-          <section class="mod-section">
-            <h2>KỸ NĂNG CHỦ ĐỘNG</h2>
-            <div class="mod-skills" id="modSkillFields"></div>
-          </section>
-          <section class="mod-section">
-            <h2>HIỆU ỨNG TƯỚNG / QUÁI</h2>
-            <div class="mod-skills" id="modEffectFields"></div>
-          </section>
-          <p class="mod-error" id="modError" role="alert" aria-live="polite"></p>
-          <div class="mod-actions">
-            <button class="mod-reset" id="modReset" type="button">MẶC ĐỊNH</button>
-            <button class="mod-apply" type="submit">ÁP DỤNG</button>
+        <nav class="settings-nav" aria-label="Danh mục cài đặt">
+          <button type="button" data-settings-tab="characters">CHARACTER MANAGEMENT</button>
+          <button type="button" data-settings-tab="monsters">MONSTER MANAGEMENT</button>
+          <button type="button" data-settings-tab="skills">SKILL MANAGEMENT</button>
+          <button type="button" data-settings-tab="mods">MOD MANAGEMENT</button>
+          <button type="button" data-settings-tab="game">GAME SETTINGS</button>
+        </nav>
+        <section class="settings-page" id="entityManagementPanel" hidden>
+          <div class="management-toolbar">
+            <div>
+              <h2 id="managementTitle"></h2>
+              <p id="managementDescription"></p>
+            </div>
+            <button class="mod-reset" id="managementRestoreDefaults" type="button">KHÔI PHỤC MẶC ĐỊNH</button>
+            <button class="mod-apply" id="managementAdd" type="button">THÊM MỚI</button>
           </div>
-        </form>
+          <p class="management-notice" id="managementNotice" role="status" aria-live="polite"></p>
+          <p class="mod-error" id="managementError" role="alert" aria-live="polite"></p>
+          <div class="management-list" id="managementList"></div>
+          <form id="managementEditor" hidden>
+            <div class="management-fields" id="managementFields"></div>
+            <p class="mod-error" id="managementFormError" role="alert" aria-live="polite"></p>
+            <div class="mod-actions">
+              <button class="mod-reset" id="managementCancel" type="button">HỦY</button>
+              <button class="mod-apply" type="submit">LƯU</button>
+            </div>
+          </form>
+          <div class="mod-actions management-apply-row" id="managementApplyRow" hidden>
+            <button class="mod-apply" id="applySavedData" type="button">ÁP DỤNG CHO TRẬN MỚI</button>
+          </div>
+        </section>
+        <section class="settings-page" id="modManagementPanel" hidden>
+          <div class="management-toolbar">
+            <div>
+              <h2>MOD MANAGEMENT</h2>
+              <p>Mod đã cài được lưu riêng; các mod đang bật áp dụng theo thứ tự trong danh sách.</p>
+            </div>
+            <button class="mod-apply" id="modAdd" type="button">THÊM MOD</button>
+          </div>
+          <p class="management-notice" id="modManagementNotice" role="status" aria-live="polite"></p>
+          <p class="mod-error" id="modManagementError" role="alert" aria-live="polite"></p>
+          <div class="management-list" id="modManagementList"></div>
+          <form id="modEditor" hidden>
+            <div class="management-fields" id="modFields"></div>
+            <p class="mod-error" id="modFormError" role="alert" aria-live="polite"></p>
+            <div class="mod-actions">
+              <button class="mod-reset" id="modCancel" type="button">HỦY</button>
+              <button class="mod-apply" type="submit">LƯU MOD</button>
+            </div>
+          </form>
+          <div class="mod-actions management-apply-row" id="modApplyRow" hidden>
+            <button class="mod-apply" id="applyMods" type="button">ÁP DỤNG MOD CHO TRẬN MỚI</button>
+          </div>
+        </section>
+        <section class="settings-page" id="gameSettingsPanel" hidden>
+          <form id="modForm">
+            <section class="mod-section">
+              <h2>TÀI NGUYÊN & CĂN CỨ</h2>
+              <div class="mod-fields" id="modGlobalFields"></div>
+            </section>
+            <section class="mod-section">
+              <h2>KỸ NĂNG CHỦ ĐỘNG</h2>
+              <div class="mod-skills" id="modSkillFields"></div>
+            </section>
+            <section class="mod-section">
+              <h2>HIỆU ỨNG TƯỚNG / QUÁI</h2>
+              <div class="mod-skills" id="modEffectFields"></div>
+            </section>
+            <p class="mod-error" id="modError" role="alert" aria-live="polite"></p>
+            <div class="mod-actions">
+              <button class="mod-reset" id="modReset" type="button">MẶC ĐỊNH</button>
+              <button class="mod-apply" type="submit">ÁP DỤNG</button>
+            </div>
+          </form>
+        </section>
       </section>
     </div>
     <div class="mod-overlay" id="upgradeOverlay" hidden>
@@ -88,6 +144,7 @@
     </footer>
   </main>
   <script src="js/config.js"></script>
+  <script src="js/management.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>

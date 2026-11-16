@@ -70,6 +70,32 @@
           Number.isFinite(current.multiplier) && current.multiplier >= 0 && current.multiplier <= 1000000);
     });
   }
+  function mergeStoredModSettings(settings) {
+    if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+      throw new Error("Dữ liệu menu mod không hợp lệ.");
+    }
+    const merged = readModSettings();
+    if ((Object.prototype.hasOwnProperty.call(settings, "coinStart") && !Number.isFinite(settings.coinStart)) ||
+        (Object.prototype.hasOwnProperty.call(settings, "baseHp") && !Number.isFinite(settings.baseHp)) ||
+        (settings.skills !== undefined &&
+          (!settings.skills || typeof settings.skills !== "object" || Array.isArray(settings.skills))) ||
+        (settings.effects !== undefined &&
+          (!settings.effects || typeof settings.effects !== "object" || Array.isArray(settings.effects)))) {
+      throw new Error("Dữ liệu menu mod không hợp lệ.");
+    }
+    if (Number.isFinite(settings.coinStart)) merged.coinStart = settings.coinStart;
+    if (Number.isFinite(settings.baseHp)) merged.baseHp = settings.baseHp;
+    cfg.skills.forEach(skill => {
+      const saved = settings.skills && settings.skills[skill.id];
+      if (saved && typeof saved === "object") Object.assign(merged.skills[skill.id], saved);
+    });
+    cfg.effects.forEach(effect => {
+      const saved = settings.effects && settings.effects[effect.id];
+      if (saved && typeof saved === "object") Object.assign(merged.effects[effect.id], saved);
+    });
+    if (!isValidModSettings(merged)) throw new Error("Dữ liệu menu mod không hợp lệ.");
+    return merged;
+  }
   function applyModSettings(settings) {
     cfg.coinStart = settings.coinStart;
     cfg.baseHp = settings.baseHp;
@@ -79,13 +105,12 @@
   try {
     const savedSettings = localStorage.getItem(modStorageKey);
     if (savedSettings) {
-      const parsedSettings = JSON.parse(savedSettings);
-      if (!isValidModSettings(parsedSettings)) throw new Error("Dữ liệu menu mod không hợp lệ.");
-      applyModSettings(parsedSettings);
+      applyModSettings(mergeStoredModSettings(JSON.parse(savedSettings)));
     }
   } catch (error) {
     console.warn("Không thể tải thông số menu mod đã lưu.", error);
   }
+  if (window.LAST_BLOOM_APPLY_ENABLED_MODS) window.LAST_BLOOM_APPLY_ENABLED_MODS();
 
   const state = {
     coins: cfg.coinStart, baseHp: cfg.baseHp, wave: 0, bestWave: 0,
@@ -94,6 +119,10 @@
     nextEnemyId: 1, lastTick: performance.now(), messageTimer: null,
     skillReadyAt: {}, monsterBonusCounts: Object.fromEntries(cfg.randomMonsterScalingAttributes.map(key => [key, 0])),
     upgradeTarget: null, modWasRunning: false
+  };
+  window.LAST_BLOOM_CONFIRM_RELOAD = () => {
+    if (state.wave === 0 && state.units.length === 0 && state.enemies.length === 0) return true;
+    return window.confirm("Áp dụng cấu hình sẽ tải lại game và kết thúc trận hiện tại. Tiếp tục?");
   };
   cfg.skills.forEach(skill => { state.skillReadyAt[skill.id] = 0; });
   try { state.bestWave = Number(localStorage.getItem("lastBloomBestWave") || 0); } catch (_) {}
@@ -377,6 +406,7 @@
     if (modOverlay.hidden === !open) return;
     modOverlay.hidden = !open;
     if (open) {
+      if (window.LAST_BLOOM_SELECT_SETTINGS_TAB) window.LAST_BLOOM_SELECT_SETTINGS_TAB("game");
       state.modWasRunning = state.waveActive && !state.paused;
       if (state.modWasRunning) state.paused = true;
       syncModForm();
@@ -917,7 +947,8 @@
           const damage = special ? baseDamage : damageAmount(unit, target, options.penetration, options.criticalMultiplier, now);
           const skill = options.activeSkill;
           const attackAsset = special ? def.ultimateAsset : def.normalAsset;
-          createProjectile(unit, target, damage, skill || null, now, attackAsset, special);
+          const skillAttackAsset = skill => skill && !special && def.skillNAsset ? def.skillNAsset : attackAsset;
+          createProjectile(unit, target, damage, skill || null, now, skillAttackAsset(skill), special);
           if (skill && skill.cooldown > 0) unit.skillReadyAt[skill.id] = now + skill.cooldown * 1000;
           tryDeploySkill(unit, now);
           if (special) unit.nextSpecialAt = now + def.specialInterval * 1000;
@@ -947,7 +978,8 @@
             criticalMultiplier: skill.effect === "CRITICAL" ? (skill.multiplier || skill.value) / 100 : 1 } :
             { penetration: 0, criticalMultiplier: 1 };
           const actualDamage = damageAmount(attack, target, options.penetration, options.criticalMultiplier, now);
-          createProjectile(enemy, target, actualDamage, skill || null, now, attackAsset, special);
+          const skillAttackAsset = skill && !special && monster.skillNAsset ? monster.skillNAsset : attackAsset;
+          createProjectile(enemy, target, actualDamage, skill || null, now, skillAttackAsset, special);
           if (skill && skill.cooldown > 0) enemy.skillReadyAt[skill.id] = now + skill.cooldown * 1000;
         } else {
           const baseTarget = { kind: "base", lane: enemy.lane };

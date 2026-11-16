@@ -27,11 +27,13 @@ Bản game HTML5/CSS3/JavaScript chạy trực tiếp trên trình duyệt, khô
 - HUMAN/DEMON dùng HP, ATK, SA (đòn/giây), RC (hồi HP mỗi 5 giây), DEF và danh sách skill.
 - Quái có xác suất xuất hiện, số lượng tối thiểu/tối đa và COIN thưởng theo từng loại.
 
-## Menu mod
-- Bấm **⚙ MOD** ở góc trên bên phải sân để chỉnh COIN bắt đầu/hiện tại, máu căn cứ hiện tại/tối đa.
-- Với từng kỹ năng chủ động, có thể chỉnh giá COIN, hồi chiêu và giá trị hiệu ứng; các hiệu ứng tướng/quái có thể chỉnh giá trị, thời lượng, hồi chiêu, xác suất và hệ số chí mạng.
-- **ÁP DỤNG** cập nhật ngay và lưu trên thiết bị; khi mở menu giữa trận, trận tự tạm dừng rồi tiếp tục khi đóng.
-- **MẶC ĐỊNH** khôi phục thông số gốc trong `js/config.js`.
+## Menu Settings
+- Bấm **⚙ SETTINGS** để mở Character Management, Monster Management, Skill Management, Mod Management và Game Settings.
+- Có thể thêm, sửa, xóa và khôi phục thông số mặc định của tướng, quái và kỹ năng; các ảnh đại diện, đánh thường, kỹ năng N/U có thể chọn từ đường dẫn hoặc tải lên (PNG/JPG/WebP/GIF, tối đa 300 KB mỗi ảnh).
+- Tướng và quái hỗ trợ chỉnh HP, ATK, SA, RC, DEF, COIN, kỹ năng trang bị và thông số bổ sung; quái có thêm SPAWN_CHANCE và SPAWN_QUANTITY tối thiểu/tối đa.
+- Mod được lưu độc lập, có thể bật/tắt, sửa hoặc gỡ. Cấu hình mod dùng JSON với các nhóm `resources`, `characters`, `monsters`, `skills`; chỉ các chỉ số gameplay được phép mới được chấp nhận.
+- **GAME SETTINGS** giữ các điều chỉnh COIN, căn cứ, kỹ năng chủ động và hiệu ứng. Thông số đã lưu không ghi đè cấu hình gốc; các mục mặc định đã xóa có thể khôi phục.
+- Dữ liệu tùy chỉnh lưu riêng trong Local Storage của trình duyệt. Chọn **ÁP DỤNG CHO TRẬN MỚI** để tải lại và nạp cấu hình; nếu đang có trận, game sẽ hỏi xác nhận trước khi tải lại.
 
 ## Gameplay và hiệu ứng
 - Lưới 12 × 8 = 96 ô, hitbox đặt tướng 1 × 2.
