@@ -45,9 +45,9 @@ window.LAST_BLOOM_CONFIG = {
     { id: "RDEF", name: "Giảm DEF", deployment: "PROJECTILE", userFaction: "BOTH", targetFaction: "OPPONENT", impact: "TARGET", effect: "RDEF", value: 10, duration: 4, cooldown: 8, chance: 0.4, speed: 380, size: 12, radius: 0 }
   ],
   skills: [
-    { id: "heal", name: "Hồi phục", asset: "assets/skills/heal.svg", cost: 40, cooldown: 18, value: 55, description: "Hồi HP cho tất cả tướng" },
-    { id: "burst", name: "Bộc phá", asset: "assets/skills/burst.svg", cost: 60, cooldown: 22, value: 75, description: "Gây sát thương lên mọi quái" },
-    { id: "freeze", name: "Đóng băng", asset: "assets/skills/freeze.svg", cost: 50, cooldown: 25, value: 4, description: "Choáng quái trong vùng" },
-    { id: "coin", name: "Tiếp tế", asset: "assets/skills/essence.svg", cost: 0, cooldown: 30, value: 70, description: "Nhận thêm COIN" }
+    { id: "heal", name: "Hồi phục", asset: "assets/skills/heal.svg", cost: 0, cooldown: 5, value: 55, description: "Hồi HP cho tất cả tướng" },
+    { id: "coin", name: "Tiếp tế", asset: "assets/skills/essence.svg", cost: 0, cooldown: 9, value: 70, description: "Nhận thêm COIN" },
+    { id: "freeze", name: "Đóng băng", asset: "assets/skills/freeze.svg", cost: 0, cooldown: 10, value: 4, description: "Choáng quái trong vùng" },
+    { id: "burst", name: "Bộc phá", asset: "assets/skills/burst.svg", cost: 0, cooldown: 0.25, value: 75, description: "Gây sát thương lên mọi quái" }
   ]
 };

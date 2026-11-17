@@ -107,6 +107,30 @@
     };
   }
   const defaultModSettings = readModSettings();
+  const previousSkillDefaults = {
+    heal: { cost: 40, cooldown: 18 },
+    burst: { cost: 60, cooldown: 22 },
+    freeze: { cost: 50, cooldown: 25 },
+    coin: { cost: 0, cooldown: 30 }
+  };
+  function migrateStoredSkillDefaults(settings) {
+    if (!settings || !settings.skills || typeof settings.skills !== "object" || Array.isArray(settings.skills)) {
+      return false;
+    }
+    let migrated = false;
+    cfg.skills.forEach(skill => {
+      const previous = previousSkillDefaults[skill.id];
+      const saved = settings.skills[skill.id];
+      if (!previous || !saved || typeof saved !== "object" || Array.isArray(saved)) return;
+      ["cost", "cooldown"].forEach(property => {
+        if (saved[property] === previous[property] && skill[property] !== previous[property]) {
+          saved[property] = skill[property];
+          migrated = true;
+        }
+      });
+    });
+    return migrated;
+  }
   function isValidModSettings(settings) {
     const values = settings && [settings.coinStart, settings.baseHp];
     if (!values || !values.every(value => Number.isFinite(value) && value >= 0 && value <= 1000000) || settings.baseHp === 0) return false;
@@ -157,7 +181,16 @@
   try {
     const savedSettings = localStorage.getItem(modStorageKey);
     if (savedSettings) {
-      applyModSettings(mergeStoredModSettings(JSON.parse(savedSettings)));
+      const parsedSettings = JSON.parse(savedSettings);
+      const migrated = migrateStoredSkillDefaults(parsedSettings);
+      applyModSettings(mergeStoredModSettings(parsedSettings));
+      if (migrated) {
+        try {
+          localStorage.setItem(modStorageKey, JSON.stringify(readModSettings()));
+        } catch (error) {
+          console.warn("Không thể lưu giá trị kỹ năng mặc định mới.", error);
+        }
+      }
     }
   } catch (error) {
     console.warn("Không thể tải thông số menu mod đã lưu.", error);
@@ -396,7 +429,7 @@
     input.type = "number";
     input.min = "0";
     input.max = "1000000";
-    input.step = property === "cooldown" || property === "value" ? "0.1" : "1";
+    input.step = property === "cooldown" ? "0.01" : property === "value" ? "0.1" : "1";
     input.required = true;
     input.value = value;
     if (setting) input.dataset.setting = setting;
@@ -948,7 +981,9 @@
       const remaining = state.skillReadyAt[id] - now;
       const cooldown = button.querySelector(".skill-cooldown");
       button.classList.toggle("cooling", remaining > 0);
-      cooldown.textContent = remaining > 0 ? fmtTime(remaining) : "";
+      cooldown.textContent = remaining > 0
+        ? remaining < 1000 ? `${(Math.ceil(remaining / 10) / 100).toFixed(2)}s` : fmtTime(remaining)
+        : "";
       button.title = `${skill.name} · ${skill.cost} COIN · ${skillEffectText(skill)} · Hồi chiêu ${skill.cooldown} giây`;
       button.setAttribute("aria-label", `${skill.name}: ${skillEffectText(skill)}`);
       button.disabled = remaining > 0 || state.coins < skill.cost || state.gameOver;

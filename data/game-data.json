@@ -60,10 +60,10 @@
     { "id": "RDEF", "deployment": "PROJECTILE", "target": "OPPONENT", "value": 10, "duration": 4, "cooldown": 8, "chance": 0.4 }
   ],
   "skills": [
-    { "id": "heal", "cost": 40, "cooldown": 18, "value": 55 },
-    { "id": "burst", "cost": 60, "cooldown": 22, "value": 75 },
-    { "id": "freeze", "cost": 50, "cooldown": 25, "value": 4 },
-    { "id": "coin", "cost": 0, "cooldown": 30, "value": 70 }
+    { "id": "heal", "cost": 0, "cooldown": 5, "value": 55 },
+    { "id": "coin", "cost": 0, "cooldown": 9, "value": 70 },
+    { "id": "freeze", "cost": 0, "cooldown": 10, "value": 4 },
+    { "id": "burst", "cost": 0, "cooldown": 0.25, "value": 75 }
   ],
   "note": "Metadata mirrored from js/config.js; runtime balance, skill deployment, effects and assets are configured there."
 }

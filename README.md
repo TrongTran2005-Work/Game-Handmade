@@ -16,8 +16,8 @@ Bản game HTML5/CSS3/JavaScript chạy trực tiếp trên trình duyệt, khô
 - Click nút giữa: bắt đầu, tạm dừng hoặc tiếp tục trận.
 - Click **SKIP**: bỏ qua thời gian chờ giữa hai đợt.
 - Click **UP** trên tướng: chọn HP, ATK, DEF, SA hoặc RC để nâng cấp bằng COIN.
-- Click 4 kỹ năng: hồi máu, bộc phá, choáng quái hoặc nhận COIN.
-- Phím `1`–`4`: dùng kỹ năng tương ứng.
+- Click 4 kỹ năng (theo thứ tự hiển thị): Hồi phục, Tiếp tế, Đóng băng, Bộc phá; tất cả miễn phí, hồi chiêu lần lượt 5 giây, 9 giây, 10 giây và 0,25 giây.
+- Phím `1`–`4`: dùng kỹ năng theo thứ tự hiển thị.
 - `Esc`: bỏ chọn tướng.
 
 ## Nhân vật theo `assets/character/Guide.docx`
