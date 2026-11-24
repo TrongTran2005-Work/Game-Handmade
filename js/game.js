@@ -2,6 +2,7 @@
   "use strict";
   const cfg = window.LAST_BLOOM_CONFIG;
   const $ = id => document.getElementById(id);
+  const gameShell = document.querySelector(".game-shell");
   const gameScreen = $("gameScreen");
   const towerElement = $("baseTower");
   const grid = $("battleGrid");
@@ -16,6 +17,7 @@
   const message = $("combatMessage");
   const helperText = $("helperText");
   const modToggle = $("modToggle");
+  const fullscreenToggle = $("fullscreenToggle");
   const modOverlay = $("modOverlay");
   const modForm = $("modForm");
   const modGlobalFields = $("modGlobalFields");
@@ -25,6 +27,9 @@
   const idleAnimationFrequencyInput = $("idleAnimationFrequency");
   const idleAnimationFrequencyValue = $("idleAnimationFrequencyValue");
   const idleAnimationStatus = $("idleAnimationStatus");
+  const uiTextSizeInput = $("uiTextSize");
+  const uiTextSizeValue = $("uiTextSizeValue");
+  const uiTextSizeStatus = $("uiTextSizeStatus");
   const upgradeOverlay = $("upgradeOverlay");
 
   document.documentElement.style.setProperty("--grid-width", `${cfg.gridWidth}%`);
@@ -47,7 +52,8 @@
   const effectDefs = new Map(cfg.effects.map(effect => [effect.id, effect]));
   const modStorageKey = "lastBloomModSettings";
   const idleAnimationStorageKey = "lastBloomIdleAnimationFrequency";
-  const upgradeMultipliers = { hp: 1.1, atk: 1.06, def: 1.08, sa: 1.1, rc: 1.1 };
+  const uiTextSizeStorageKey = "lastBloomUiTextSize";
+  const gameStorageKey = "lastBloomGameProgressV1";
 
   function applyIdleAnimationFrequency(frequency) {
     const roundedFrequency = Math.round(frequency * 10) / 10;
@@ -88,6 +94,54 @@
     }
   }
   applyIdleAnimationFrequency(loadIdleAnimationFrequency());
+  function applyUiTextSize(size) {
+    if (!Number.isInteger(size) || size < 10 || size > 16) {
+      throw new Error("Cỡ chữ giao diện phải từ 10 đến 16 px.");
+    }
+    uiTextSizeInput.value = String(size);
+    uiTextSizeValue.textContent = String(size);
+    document.documentElement.style.setProperty("--ui-font-small", `${size * 0.75}px`);
+    document.documentElement.style.setProperty("--ui-font-medium", `${size * 0.85}px`);
+    document.documentElement.style.setProperty("--ui-font-base", `${size}px`);
+    document.documentElement.style.setProperty("--ui-font-large", `${size * 1.25}px`);
+  }
+  function loadUiTextSize() {
+    try {
+      const saved = localStorage.getItem(uiTextSizeStorageKey);
+      if (saved === null) return 12;
+      const size = Number(saved);
+      if (!Number.isInteger(size) || size < 10 || size > 16) {
+        throw new Error("Cỡ chữ giao diện đã lưu không hợp lệ.");
+      }
+      return size;
+    } catch (error) {
+      console.warn("Không thể tải cỡ chữ giao diện; dùng mặc định 12 px.", error);
+      return 12;
+    }
+  }
+  applyUiTextSize(loadUiTextSize());
+
+  function updateFullscreenToggle() {
+    const isFullscreen = document.fullscreenElement === gameShell;
+    const label = isFullscreen ? "Thoát toàn màn hình" : "Bật toàn màn hình";
+    fullscreenToggle.setAttribute("aria-label", label);
+    fullscreenToggle.title = label;
+    fullscreenToggle.textContent = isFullscreen ? "↙" : "⛶";
+  }
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement === gameShell) {
+        await document.exitFullscreen();
+      } else if (typeof gameShell.requestFullscreen === "function") {
+        await gameShell.requestFullscreen();
+      } else {
+        showMessage("Trình duyệt không hỗ trợ chế độ toàn màn hình.");
+      }
+    } catch (error) {
+      console.error("Không thể đổi chế độ toàn màn hình.", error);
+      showMessage("Không thể đổi chế độ toàn màn hình.");
+    }
+  }
 
   function readModSettings() {
     return {
@@ -203,7 +257,10 @@
     paused: false, gameOver: false, countdownUntil: 0, nextUnitId: 1,
     nextEnemyId: 1, lastTick: performance.now(), messageTimer: null,
     skillReadyAt: {}, monsterBonusCounts: Object.fromEntries(cfg.randomMonsterScalingAttributes.map(key => [key, 0])),
-    upgradeTarget: null, modWasRunning: false
+    humanUpgradeLevel: 0, humanUpgradeTotalSpent: 0,
+    skillUpgradeLevels: { heal: 0, burst: 0, freeze: 0 },
+    skillUpgradeSpent: { heal: 0, burst: 0, freeze: 0 },
+    roundDamageDealt: 0, modWasRunning: false, upgradeWasRunning: false,
   };
   window.LAST_BLOOM_CONFIRM_RELOAD = () => {
     if (state.wave === 0 && state.units.length === 0 && state.enemies.length === 0) return true;
@@ -211,6 +268,153 @@
   };
   cfg.skills.forEach(skill => { state.skillReadyAt[skill.id] = 0; });
   try { state.bestWave = Number(localStorage.getItem("lastBloomBestWave") || 0); } catch (_) {}
+  restoreGameState();
+
+  function roundCoin(amount) {
+    return Math.round((amount + Number.EPSILON) * 100) / 100;
+  }
+  function formatCoin(amount) {
+    return roundCoin(amount).toLocaleString("vi-VN", {
+      minimumFractionDigits: Number.isInteger(roundCoin(amount)) ? 0 : 2,
+      maximumFractionDigits: 2
+    });
+  }
+  function upgradeCostForLevel(level) {
+    return roundCoin(cfg.humanUpgradeBaseCost * Math.pow(cfg.upgradeCostGrowth, level));
+  }
+  function cumulativeUpgradeCost(level) {
+    let total = 0;
+    for (let index = 0; index < level; index++) total = roundCoin(total + upgradeCostForLevel(index));
+    return total;
+  }
+  function skillValue(skill) {
+    return skill.value * Math.pow(cfg.skillUpgradeEffectMultiplier, state.skillUpgradeLevels[skill.id] || 0);
+  }
+  function isValidEntitySnapshot(entity, kind) {
+    const typeExists = kind === "unit" ? unitDefs.has(entity.type) : monsterDefs.has(entity.type);
+    const stats = ["hp", "maxHp", "atk", "sa", "rc", "def", "specialDamage"];
+    return entity && entity.kind === kind && typeExists &&
+      Number.isInteger(kind === "unit" ? entity.uid : entity.eid) &&
+      stats.every(key => Number.isFinite(entity[key]) && entity[key] >= 0) &&
+      entity.maxHp > 0 && entity.hp <= entity.maxHp &&
+      Array.isArray(entity.skillIds) && Array.isArray(entity.effects);
+  }
+  function saveEntitySnapshot(entity, now) {
+    const snapshot = JSON.parse(JSON.stringify(entity));
+    ["nextAttackAt", "nextHealAt", "nextSpecialAt"].forEach(key => {
+      if (Number.isFinite(snapshot[key])) snapshot[key] = Math.max(0, snapshot[key] - now);
+    });
+    snapshot.skillReadyAt = Object.fromEntries(Object.entries(snapshot.skillReadyAt || {}).map(([id, at]) =>
+      [id, Math.max(0, at - now)]));
+    snapshot.effects = snapshot.effects.map(effect => ({
+      ...effect,
+      remaining: effect.expiresAt === 0 ? 0 : Math.max(0, effect.expiresAt - now),
+      expiresAt: undefined
+    }));
+    return snapshot;
+  }
+  function restoreEntitySnapshot(snapshot, now) {
+    const entity = { ...snapshot };
+    ["nextAttackAt", "nextHealAt", "nextSpecialAt"].forEach(key => {
+      if (Number.isFinite(entity[key])) entity[key] = now + entity[key];
+    });
+    entity.skillReadyAt = Object.fromEntries(Object.entries(entity.skillReadyAt || {}).map(([id, remaining]) =>
+      [id, now + remaining]));
+    entity.effects = entity.effects.map(effect => {
+      const restored = { ...effect, expiresAt: effect.remaining === 0 ? 0 : now + effect.remaining };
+      delete restored.remaining;
+      return restored;
+    });
+    return entity;
+  }
+  function saveGameState() {
+    const now = performance.now();
+    const snapshot = {
+      version: 1,
+      savedAt: Date.now(),
+      coins: roundCoin(state.coins),
+      baseHp: state.baseHp,
+      wave: state.wave,
+      bestWave: state.bestWave,
+      waveActive: state.waveActive,
+      paused: state.paused,
+      gameOver: state.gameOver,
+      countdownRemaining: Math.max(0, state.countdownUntil - now),
+      nextUnitId: state.nextUnitId,
+      nextEnemyId: state.nextEnemyId,
+      monsterBonusCounts: state.monsterBonusCounts,
+      humanUpgradeLevel: state.humanUpgradeLevel,
+      humanUpgradeTotalSpent: state.humanUpgradeTotalSpent,
+      skillUpgradeLevels: state.skillUpgradeLevels,
+      skillUpgradeSpent: state.skillUpgradeSpent,
+      roundDamageDealt: state.roundDamageDealt,
+      skillReadyAt: Object.fromEntries(Object.entries(state.skillReadyAt).map(([id, at]) =>
+        [id, Math.max(0, at - now)])),
+      units: state.units.map(unit => saveEntitySnapshot(unit, now)),
+      enemies: state.enemies.map(enemy => saveEntitySnapshot(enemy, now))
+    };
+    try { localStorage.setItem(gameStorageKey, JSON.stringify(snapshot)); }
+    catch (error) { console.error("Không thể lưu tiến trình trận đấu.", error); }
+  }
+  function restoreGameState() {
+    try {
+      const raw = localStorage.getItem(gameStorageKey);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (!saved || saved.version !== 1 || !Number.isFinite(saved.coins) || saved.coins < 0 ||
+          !Number.isFinite(saved.baseHp) || saved.baseHp < 0 || !Number.isInteger(saved.wave) ||
+          saved.wave < 0 || !Array.isArray(saved.units) || !Array.isArray(saved.enemies) ||
+          saved.units.length > 200 || saved.enemies.length > 100 ||
+          !saved.units.every(entity => isValidEntitySnapshot(entity, "unit")) ||
+          !saved.enemies.every(entity => isValidEntitySnapshot(entity, "enemy")) ||
+          !Number.isInteger(saved.humanUpgradeLevel) || saved.humanUpgradeLevel < 0 ||
+          saved.humanUpgradeLevel > 1000 ||
+          !Number.isFinite(saved.humanUpgradeTotalSpent) || saved.humanUpgradeTotalSpent < 0) {
+        throw new Error("Dữ liệu trận đấu đã lưu không hợp lệ.");
+      }
+      const now = performance.now();
+      state.coins = roundCoin(saved.coins);
+      state.baseHp = saved.baseHp;
+      state.wave = saved.wave;
+      state.bestWave = Number.isInteger(saved.bestWave) ? Math.max(state.bestWave, saved.bestWave) : state.bestWave;
+      state.waveActive = Boolean(saved.waveActive);
+      state.paused = state.waveActive || Boolean(saved.paused);
+      state.gameOver = Boolean(saved.gameOver);
+      state.countdownUntil = now + Math.max(0, Number(saved.countdownRemaining) || 0);
+      state.nextUnitId = Math.max(1, Number(saved.nextUnitId) || 1);
+      state.nextEnemyId = Math.max(1, Number(saved.nextEnemyId) || 1);
+      state.monsterBonusCounts = Object.fromEntries(cfg.randomMonsterScalingAttributes.map(key =>
+        [key, Math.max(0, Number(saved.monsterBonusCounts && saved.monsterBonusCounts[key]) || 0)]));
+      state.humanUpgradeLevel = saved.humanUpgradeLevel;
+      state.humanUpgradeTotalSpent = roundCoin(saved.humanUpgradeTotalSpent);
+      ["heal", "burst", "freeze"].forEach(id => {
+        state.skillUpgradeLevels[id] = Math.max(0, Math.min(1000,
+          Number(saved.skillUpgradeLevels && saved.skillUpgradeLevels[id]) || 0));
+        state.skillUpgradeSpent[id] = roundCoin(Math.max(0,
+          Number(saved.skillUpgradeSpent && saved.skillUpgradeSpent[id]) || 0));
+      });
+      state.roundDamageDealt = Math.max(0, Number(saved.roundDamageDealt) || 0);
+      cfg.skills.forEach(skill => {
+        state.skillReadyAt[skill.id] = now + Math.max(0,
+          Number(saved.skillReadyAt && saved.skillReadyAt[skill.id]) || 0);
+      });
+      state.units = saved.units.map(entity => restoreEntitySnapshot(entity, now));
+      state.enemies = saved.enemies.map(entity => restoreEntitySnapshot(entity, now));
+      state.enemies.forEach(enemy => {
+        delete enemy.phaseTwoReadyAt;
+        if (!enemy.defeated && enemy.phase === 1 && enemy.hp <= 0) {
+          enemy.phase = 2;
+          enemy.hp = enemy.maxHp;
+        }
+      });
+      state.nextUnitId = Math.max(state.nextUnitId, ...state.units.map(unit => unit.uid + 1));
+      state.nextEnemyId = Math.max(state.nextEnemyId, ...state.enemies.map(enemy => enemy.eid + 1));
+    } catch (error) {
+      console.error("Không thể khôi phục tiến trình trận đấu đã lưu.", error);
+      try { localStorage.removeItem(gameStorageKey); }
+      catch (removeError) { console.error("Không thể xóa tiến trình trận đấu lỗi.", removeError); }
+    }
+  }
 
   function showMessage(text, duration = 1900) {
     message.textContent = text;
@@ -283,16 +487,30 @@
     return Math.max(1, displayedStat(attacker, "atk", now) * (100 / (100 + def)) * criticalMultiplier);
   }
   function awardKill(enemy) {
-    if (enemy.rewarded || enemy.hp > 0) return;
+    if (enemy.rewarded || !enemy.defeated) return;
     enemy.rewarded = true;
-    state.coins += enemy.coinReward;
+    state.coins = roundCoin(state.coins + enemy.coinReward);
   }
   function damageEntity(attacker, target, rawDamage, now = performance.now(), armorPenetration = 0, criticalMultiplier = 1) {
     if (!alive(attacker) || !alive(target)) return 0;
     const damage = Math.max(1, rawDamage || damageAmount(attacker, target, armorPenetration, criticalMultiplier, now));
-    target.hp = Math.max(0, target.hp - damage);
-    if (target.kind === "enemy") awardKill(target);
-    return damage;
+    const actualDamage = Math.min(target.hp, damage);
+    target.hp = Math.max(0, target.hp - actualDamage);
+    if (attacker.kind === "unit" && target.kind === "enemy") state.roundDamageDealt += actualDamage;
+    if (target.kind === "enemy" && target.hp <= 0) {
+      if (target.phase === 1 && !target.defeated) {
+        target.phase = 2;
+        target.hp = target.maxHp;
+        target.nextAttackAt = now + 650;
+        target.nextHealAt = now + 5000;
+        target.nextSpecialAt = now + (target.specialInterval || 0) * 1000;
+        flashDemonPhase();
+      } else {
+        target.defeated = true;
+        awardKill(target);
+      }
+    }
+    return actualDamage;
   }
   function resolveTargetFaction(owner, targetFaction) {
     const faction = factionOf(owner);
@@ -397,10 +615,11 @@
   }
 
   function skillEffectText(skill) {
-    if (skill.id === "heal") return `Hồi ${skill.value} HP cho tất cả tướng`;
-    if (skill.id === "burst") return `Gây ${skill.value} sát thương lên mọi quái`;
-    if (skill.id === "freeze") return `Choáng quái trong ${skill.value} giây`;
-    return `Nhận thêm ${skill.value} COIN`;
+    const value = skillValue(skill);
+    if (skill.id === "heal") return `Hồi ${formatCoin(value)} HP cho tất cả tướng`;
+    if (skill.id === "burst") return `Gây ${formatCoin(value)} sát thương lên mọi quái`;
+    if (skill.id === "freeze") return `Choáng quái trong ${formatCoin(value)} giây`;
+    return `Nhận thêm ${formatCoin(value)} COIN`;
   }
   function renderSkills() {
     cfg.skills.forEach(skill => {
@@ -572,6 +791,7 @@
       renderSelection();
       return;
     }
+    saveGameState();
     updateHud();
     updateSkillButtons();
     renderSelection();
@@ -599,6 +819,7 @@
     updateHud();
     updateSkillButtons();
     renderSelection();
+    saveGameState();
     showMessage("Đã khôi phục thông số mặc định.");
   }
 
@@ -614,7 +835,9 @@
       cell.classList.toggle("invalid-cell", Boolean(state.selected && !can));
     });
     if (state.selected) setHint(`${unitDefs.get(state.selected).name}: chọn ô trống (1 cột × 2 hàng)`);
-    else if (!state.gameOver) setHint(state.waveActive ? "Chọn UPGRADE trên tướng để nâng thuộc tính" : "Chọn tướng rồi chọn ô trên sân");
+    else if (!state.gameOver) setHint(state.waveActive
+      ? "Chọn UPGRADE HUMAN hoặc tiếp tục chiến đấu"
+      : "Chọn tướng rồi chọn ô trên sân");
   }
   function placeSelected(col, row) {
     if (!state.selected || state.gameOver) return;
@@ -623,20 +846,24 @@
     if (row + 1 >= cfg.rows) { showMessage("Tướng cần đúng 2 ô theo chiều dọc"); return; }
     if (overlapsTower(col, row)) { showMessage("Không thể bố trí tướng lên vị trí của trụ"); return; }
     if (!canPlace(col, row)) { showMessage("Vị trí này đã có tướng hoặc không hợp lệ"); return; }
-    state.coins -= def.cost;
+    state.coins = roundCoin(state.coins - def.cost);
     const now = performance.now();
+    const humanStatMultiplier = Math.pow(1 + cfg.humanStatIncreasePerLevel, state.humanUpgradeLevel);
     state.units.push({
       kind: "unit", uid: state.nextUnitId++, type: def.id, col, row,
-      hp: def.hp, maxHp: def.hp, atk: def.atk, sa: def.sa, rc: def.rc, def: def.def,
+      hp: def.hp * humanStatMultiplier, maxHp: def.hp * humanStatMultiplier,
+      atk: def.atk * humanStatMultiplier, sa: def.sa * humanStatMultiplier,
+      rc: def.rc * humanStatMultiplier, def: def.def * humanStatMultiplier,
       skillIds: def.skillIds.slice(), skillReadyAt: {}, effects: [],
       nextAttackAt: now + 650, nextHealAt: now + 5000,
       nextSpecialAt: now + (def.specialInterval || 0) * 1000,
-      specialDamage: def.specialDamage || 0, upgrades: 0
+      specialDamage: (def.specialDamage || 0) * humanStatMultiplier
     });
     renderUnits();
     updateHud();
     renderSelection();
     showMessage(`${def.name} đã được bố trí`);
+    saveGameState();
   }
   function renderEffects(entity, el) {
     const list = activeEffects(entity);
@@ -667,24 +894,14 @@
       const fill = document.createElement("i");
       fill.style.width = `${Math.max(0, unit.hp / unit.maxHp * 100)}%`;
       bar.appendChild(fill);
-      const upgrade = document.createElement("button");
-      upgrade.type = "button";
-      upgrade.className = "unit-upgrade";
-      upgrade.textContent = "UP";
-      upgrade.title = `Nâng cấp ${def.name}`;
-      upgrade.setAttribute("aria-label", `UPGRADE ${def.name}`);
-      upgrade.addEventListener("click", event => {
-        event.stopPropagation();
-        openUpgrade(unit.uid);
-      });
-      el.append(img, bar, upgrade);
+      el.append(img, bar);
       renderEffects(unit, el);
       unitsLayer.appendChild(el);
     });
   }
   function renderEnemies() {
     road.innerHTML = "";
-    state.enemies.filter(alive).forEach(enemy => {
+    state.enemies.filter(enemy => !enemy.defeated).forEach(enemy => {
       const el = document.createElement("div");
       el.className = "enemy";
       el.dataset.enemyId = enemy.eid;
@@ -696,26 +913,25 @@
       img.src = monster.asset;
       img.alt = monster.name;
       img.draggable = false;
-      const bar = document.createElement("span");
-      bar.className = "enemy-health";
-      const fill = document.createElement("i");
-      fill.style.width = `${Math.max(0, enemy.hp / enemy.maxHp * 100)}%`;
-      bar.appendChild(fill);
-      el.append(img, bar);
+      const bars = document.createElement("span");
+      bars.className = "enemy-health-bars";
+      [1, 2].forEach(phase => {
+        const bar = document.createElement("span");
+        const currentPhase = enemy.phase === phase;
+        bar.className = `enemy-health${currentPhase ? " phase-current" : ""}` +
+          `${phase === 2 ? " second-phase" : ""}`;
+        const fill = document.createElement("i");
+        const phaseHp = currentPhase ? enemy.hp : phase === 2 && !enemy.defeated ? enemy.maxHp : 0;
+        fill.style.width = `${Math.max(0, phaseHp / enemy.maxHp * 100)}%`;
+        bar.appendChild(fill);
+        bars.appendChild(bar);
+      });
+      el.append(img, bars);
       renderEffects(enemy, el);
       road.appendChild(el);
     });
   }
 
-  function weightedMonster() {
-    const roll = Math.random();
-    let total = 0;
-    for (const monster of cfg.monsters) {
-      total += monster.spawnChance;
-      if (roll < total) return monster;
-    }
-    return cfg.monsters[cfg.monsters.length - 1];
-  }
   function clearProjectiles() {
     state.projectiles.forEach(projectile => projectile.element.remove());
     state.projectiles = [];
@@ -727,26 +943,27 @@
     state.paused = false;
     state.countdownUntil = 0;
     state.enemies = [];
+    state.roundDamageDealt = 0;
     clearProjectiles();
     const now = performance.now();
     const laneOrder = [2, 4, 6, 8, 10, 1, 3, 5, 7, 9, 11, 0, 5, 7, 3];
-    const chosen = [];
-    cfg.monsters.forEach(monster => {
-      if (Math.random() < monster.spawnChance) {
-        const count = monster.spawnMin + Math.floor(Math.random() * (monster.spawnMax - monster.spawnMin + 1));
-        for (let i = 0; i < count; i++) chosen.push(monster);
-      }
+    const eligibleMonsters = cfg.monsters.filter(monster => {
+      const demonNumber = Number.parseInt(monster.id.replace(/^M/i, ""), 10);
+      return Number.isInteger(demonNumber) && demonNumber >= 1 && demonNumber <= 10 &&
+        (state.wave >= 10 || demonNumber <= 5);
     });
-    if (!chosen.length) {
-      const monster = weightedMonster();
-      const count = monster.spawnMin + Math.floor(Math.random() * (monster.spawnMax - monster.spawnMin + 1));
-      for (let i = 0; i < count; i++) chosen.push(monster);
-    }
-    chosen.slice(0, cfg.maxEnemiesOnMap).forEach((monster, index) => {
+    if (!eligibleMonsters.length) throw new Error("Không có Demon đủ điều kiện xuất hiện ở vòng này.");
+    const count = state.wave >= 10 ? 5 : 3 + Math.floor(Math.random() * 3);
+    const chosen = Array.from({ length: count }, () =>
+      eligibleMonsters[Math.floor(Math.random() * eligibleMonsters.length)]);
+    chosen.forEach((monster, index) => {
       const extraCount = state.monsterBonusCounts;
       const common = Math.pow(1.1, state.wave - 1);
+      const demonNumber = Number.parseInt(monster.id.replace(/^M/i, ""), 10);
+      const difficulty = Math.min(10, Math.max(1, demonNumber));
       const scaled = attr => monster[attr] *
-        (attr === "atk" || attr === "def" ? common : 1) *
+        (attr === "atk" || attr === "def" ? difficulty * common :
+          attr === "hp" ? difficulty : 1) *
         Math.pow(1.1, extraCount[attr] || 0);
       const hp = scaled("hp");
       state.enemies.push({
@@ -756,15 +973,16 @@
         coinReward: monster.coinReward, skillIds: monster.skills.slice(), skillReadyAt: {}, effects: [],
         nextHealAt: now + 5000, nextAttackAt: now + 1800 + (index % 3) * 350,
         nextSpecialAt: now + (monster.ultimateInterval || 0) * 1000, specialDamage: monster.ultimateDamage || 0,
-        specialInterval: monster.ultimateInterval || 0,
+        specialInterval: monster.ultimateInterval || 0, phase: 1, defeated: false, rewarded: false,
         top: 5 + (index % 2) * 8, height: 66
       });
     });
     renderEnemies();
     updateHud();
     updateWaveButton();
-    showMessage(`ĐỢT ${state.wave} — ${state.enemies.length} quái đã xuất hiện`, 2500);
+    showMessage(`ĐỢT ${state.wave} — ${state.enemies.length} Demon đã xuất hiện`, 2500);
     setHint("Tướng và quái chiến đấu theo chỉ số ATK, SA, DEF và kỹ năng");
+    saveGameState();
   }
   function updateWaveButton() {
     if (state.gameOver) waveButton.textContent = "CHƠI LẠI";
@@ -786,6 +1004,7 @@
     if (state.waveActive) {
       state.paused = !state.paused;
       updateWaveButton();
+      saveGameState();
       showMessage(state.paused ? "Đã tạm dừng" : "Tiếp tục chiến đấu");
     } else if (state.countdownUntil <= 0) spawnWave();
   }
@@ -952,27 +1171,29 @@
     if (state.coins < skill.cost) { showMessage("Không đủ COIN"); return; }
     if (id === "heal" && !state.units.some(alive)) { showMessage("Chưa có tướng để hồi phục"); return; }
     if ((id === "burst" || id === "freeze") && !state.enemies.some(alive)) { showMessage("Chưa có quái trên đường"); return; }
-    state.coins -= skill.cost;
+    const value = skillValue(skill);
+    state.coins = roundCoin(state.coins - skill.cost);
     state.skillReadyAt[id] = now + skill.cooldown * 1000;
     if (id === "heal") {
-      state.units.forEach(unit => healEntity(unit, skill.value, now));
+      state.units.forEach(unit => healEntity(unit, value, now));
       renderUnits();
-      showMessage(`Hồi phục: tất cả tướng nhận tối đa ${skill.value} HP`);
+      showMessage(`Hồi phục: tất cả tướng nhận tối đa ${formatCoin(value)} HP`);
     } else if (id === "burst") {
-      state.enemies.forEach(enemy => damageEntity({ ...enemy, atk: skill.value, kind: "enemy" }, enemy, skill.value, now));
+      state.enemies.forEach(enemy => damageEntity({ ...enemy, atk: value, kind: "unit" }, enemy, value, now));
       renderEnemies();
-      showMessage(`Bộc phá: gây ${skill.value} sát thương lên mọi quái`);
+      showMessage(`Bộc phá: gây ${formatCoin(value)} sát thương lên mọi quái`);
       checkWaveClear(now);
     } else if (id === "freeze") {
-      state.enemies.forEach(enemy => applyStatus(enemy, "STUN", 1, skill.value, now));
+      state.enemies.forEach(enemy => applyStatus(enemy, "STUN", 1, value, now));
       renderEnemies();
-      showMessage(`Quái bị choáng trong ${skill.value} giây`);
+      showMessage(`Quái bị choáng trong ${formatCoin(value)} giây`);
     } else if (id === "coin") {
-      state.coins += skill.value;
-      showMessage(`Tiếp tế: nhận thêm ${skill.value} COIN`);
+      state.coins = roundCoin(state.coins + value);
+      showMessage(`Tiếp tế: nhận thêm ${formatCoin(value)} COIN`);
     }
     updateHud();
     updateSkillButtons();
+    saveGameState();
   }
   function updateSkillButtons() {
     const now = performance.now();
@@ -990,19 +1211,39 @@
     });
   }
   function updateHud() {
-    $("coinValue").textContent = `COIN ${Math.floor(state.coins)}`;
+    $("coinValue").textContent = `COIN ${formatCoin(state.coins)}`;
     const towerPercent = Math.max(0, state.baseHp / cfg.baseHp * 100);
     $("baseValue").textContent = `TRỤ ${Math.ceil(towerPercent)}%`;
     $("towerHealth").style.width = `${towerPercent}%`;
     $("waveValue").textContent = `ĐỢT ${state.wave}`;
+    const totalEnemyHp = state.enemies.reduce((total, enemy) => total + enemy.maxHp * 2, 0);
+    const remainingEnemyHp = state.enemies.reduce((total, enemy) => {
+      if (enemy.defeated) return total;
+      return total + Math.max(0, enemy.hp) + (enemy.phase === 1 ? enemy.maxHp : 0);
+    }, 0);
+    const progress = totalEnemyHp > 0
+      ? Math.min(100, Math.max(0, (1 - remainingEnemyHp / totalEnemyHp) * 100))
+      : state.wave > 0 && !state.waveActive ? 100 : 0;
+    $("levelProgressLabel").textContent = `LV ${state.wave} · ${Math.round(progress)}%`;
+    $("levelProgress").setAttribute("aria-valuenow", String(Math.round(progress)));
+    $("levelProgressFill").style.width = `${progress}%`;
+    const damageProgress = totalEnemyHp > 0
+      ? Math.min(100, Math.max(0, state.roundDamageDealt / totalEnemyHp * 100))
+      : 0;
+    $("damageProgressLabel").textContent =
+      `SÁT THƯƠNG ${formatCoin(state.roundDamageDealt)} · ${Math.round(damageProgress)}%`;
+    $("damageProgress").setAttribute("aria-valuenow", String(Math.round(damageProgress)));
+    $("damageProgressFill").style.width = `${damageProgress}%`;
+    $("upgradeOpen").disabled = state.gameOver;
     updateWaveButton();
   }
   function checkWaveClear(now = performance.now()) {
-    if (!state.waveActive || state.enemies.some(alive)) return;
+    if (!state.waveActive || state.enemies.some(enemy => !enemy.defeated)) return;
     state.waveActive = false;
     state.paused = false;
     state.baseHp = Math.min(cfg.baseHp, state.baseHp + cfg.baseHp * cfg.baseRecoveryPercent / 100);
-    state.coins += cfg.coinPerRound;
+    const damageReward = roundCoin(state.roundDamageDealt * cfg.waveDamageRewardRate);
+    state.coins = roundCoin(state.coins + damageReward);
     state.bestWave = Math.max(state.bestWave, state.wave);
     try { localStorage.setItem("lastBloomBestWave", String(state.bestWave)); } catch (_) {}
     const attribute = cfg.randomMonsterScalingAttributes[Math.floor(Math.random() * cfg.randomMonsterScalingAttributes.length)];
@@ -1011,8 +1252,9 @@
     clearProjectiles();
     renderEnemies();
     updateHud();
-    showMessage(`Hoàn thành đợt ${state.wave}! +${cfg.coinPerRound} COIN · Căn cứ hồi ${cfg.baseRecoveryPercent}%`, 3200);
+    showMessage(`Hoàn thành đợt ${state.wave}! +${formatCoin(damageReward)} COIN (30% sát thương) · Căn cứ hồi ${cfg.baseRecoveryPercent}%`, 3800);
     setHint("Đợt tiếp theo tự bắt đầu sau 30 giây — nhấn SKIP để tiếp tục ngay");
+    saveGameState();
   }
   function damageBase(amount) {
     state.baseHp = Math.max(0, state.baseHp - amount);
@@ -1026,6 +1268,17 @@
       showMessage("TRỤ ĐÃ BỊ PHÁ HỦY", 5000);
       setHint(`Kết thúc · Kỷ lục ${state.bestWave} đợt`);
     }
+    saveGameState();
+  }
+  function flashDemonPhase() {
+    clearTimeout(state.phaseFlashTimer);
+    gameScreen.classList.remove("phase-flash");
+    void gameScreen.offsetWidth;
+    gameScreen.classList.add("phase-flash");
+    state.phaseFlashTimer = setTimeout(
+      () => gameScreen.classList.remove("phase-flash"),
+      cfg.phaseFlashDurationSeconds * 1000
+    );
   }
   function selectTarget(entity) {
     if (entity.kind === "enemy") {
@@ -1117,54 +1370,117 @@
     }
     state.units = state.units.filter(alive);
     if (unitsChanged || statusesChanged) renderUnits();
-    if (enemiesChanged || unitsChanged || statusesChanged || state.enemies.some(enemy => !alive(enemy))) renderEnemies();
+    if (enemiesChanged || unitsChanged || statusesChanged ||
+        state.enemies.some(enemy => !enemy.defeated && !alive(enemy))) renderEnemies();
     checkWaveClear(now);
     updateSkillButtons();
   }
 
-  function unitUpgradeCost(unit) {
-    return cfg.upgradeCost + unit.upgrades * cfg.upgradeCostStep;
-  }
-  function openUpgrade(uid) {
-    const unit = state.units.find(item => item.uid === uid);
-    if (!unit || state.gameOver) return;
-    state.upgradeTarget = uid;
-    const def = unitDefs.get(unit.type);
-    $("upgradeCharacter").textContent = `${def.name} · HP ${Math.ceil(unit.hp)}/${Math.ceil(unit.maxHp)} · ATK ${Math.ceil(unit.atk)} · DEF ${Math.ceil(unit.def)}`;
-    $("upgradeCost").textContent = `Chi phí: ${unitUpgradeCost(unit)} COIN`;
+  function openUpgrade() {
+    if (state.gameOver) return;
+    if (upgradeOverlay.hidden) {
+      state.upgradeWasRunning = state.waveActive && !state.paused;
+      if (state.upgradeWasRunning) state.paused = true;
+    }
+    const level = state.humanUpgradeLevel;
+    const nextCost = upgradeCostForLevel(level);
+    const totalIncrease = (Math.pow(1 + cfg.humanStatIncreasePerLevel, level) - 1) * 100;
+    $("upgradeCharacter").textContent =
+      `Cấp UP ${level} · Toàn phe HUMAN tăng ${totalIncrease.toFixed(2)}% chỉ số`;
+    $("upgradeCost").textContent =
+      `Lần tiếp theo: ${formatCoin(nextCost)} COIN · Tổng đã chi: ${formatCoin(cumulativeUpgradeCost(level))} COIN`;
+    $("upgradeApply").disabled = state.coins < nextCost;
     $("upgradeError").textContent = "";
+    renderSkillUpgrades();
     upgradeOverlay.hidden = false;
+    updateWaveButton();
+    saveGameState();
     $("upgradeClose").focus();
   }
   function closeUpgrade() {
+    if (state.upgradeWasRunning && state.waveActive && !state.gameOver) state.paused = false;
+    state.upgradeWasRunning = false;
     upgradeOverlay.hidden = true;
-    state.upgradeTarget = null;
+    updateWaveButton();
+    saveGameState();
   }
-  function applyUpgrade() {
-    const unit = state.units.find(item => item.uid === state.upgradeTarget);
-    if (!unit) { closeUpgrade(); return; }
-    const cost = unitUpgradeCost(unit);
+  function renderSkillUpgrades() {
+    const list = $("skillUpgradeList");
+    list.innerHTML = "";
+    ["heal", "burst", "freeze"].forEach(id => {
+      const skill = skillDefs.get(id);
+      if (!skill) return;
+      const level = state.skillUpgradeLevels[id] || 0;
+      const cost = upgradeCostForLevel(level);
+      const row = document.createElement("div");
+      row.className = "skill-upgrade-row";
+      const info = document.createElement("div");
+      info.className = "skill-upgrade-info";
+      const title = document.createElement("strong");
+      title.textContent = skill.name;
+      const effect = document.createElement("span");
+      const totalIncrease = (Math.pow(cfg.skillUpgradeEffectMultiplier, level) - 1) * 100;
+      effect.textContent =
+        `Cấp ${level} · Hiệu lực +${totalIncrease.toFixed(2)}% · Giá trị ${formatCoin(skillValue(skill))}`;
+      const spent = document.createElement("span");
+      spent.textContent =
+        `Lần tới: ${formatCoin(cost)} COIN · Tổng đã chi: ${formatCoin(cumulativeUpgradeCost(level))} COIN`;
+      info.append(title, effect, spent);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "mod-apply";
+      button.textContent = "UPGRADE";
+      button.disabled = state.gameOver || state.coins < cost;
+      button.addEventListener("click", () => applySkillUpgrade(id));
+      row.append(info, button);
+      list.appendChild(row);
+    });
+  }
+  function applyHumanUpgrade() {
+    if (state.gameOver || state.humanUpgradeLevel >= 1000) return;
+    const cost = upgradeCostForLevel(state.humanUpgradeLevel);
     if (state.coins < cost) {
       $("upgradeError").textContent = "Không đủ COIN để nâng cấp.";
       return;
     }
-    const stat = $("upgradeAttribute").value;
-    const multiplier = upgradeMultipliers[stat];
-    if (!multiplier) return;
-    state.coins -= cost;
-    if (stat === "hp") {
-      const previousMax = unit.maxHp;
+    const multiplier = 1 + cfg.humanStatIncreasePerLevel;
+    state.coins = roundCoin(state.coins - cost);
+    state.humanUpgradeTotalSpent = roundCoin(state.humanUpgradeTotalSpent + cost);
+    state.humanUpgradeLevel += 1;
+    state.units.forEach(unit => {
+      unit.hp = Math.min(unit.maxHp * multiplier, unit.hp * multiplier);
       unit.maxHp *= multiplier;
-      unit.hp = Math.min(unit.maxHp, unit.hp + (unit.maxHp - previousMax));
-    } else unit[stat] *= multiplier;
-    unit.upgrades += 1;
+      ["atk", "sa", "rc", "def", "specialDamage"].forEach(stat => { unit[stat] *= multiplier; });
+    });
     renderUnits();
     updateHud();
-    openUpgrade(unit.uid);
-    showMessage(`${unitDefs.get(unit.type).name} đã nâng cấp ${stat.toUpperCase()}`);
+    openUpgrade();
+    saveGameState();
+    showMessage(`Toàn phe HUMAN đã nâng lên UP ${state.humanUpgradeLevel}`);
+  }
+  function applySkillUpgrade(id) {
+    if (state.gameOver || !Object.prototype.hasOwnProperty.call(state.skillUpgradeLevels, id)) return;
+    const level = state.skillUpgradeLevels[id];
+    if (level >= 1000) return;
+    const cost = upgradeCostForLevel(level);
+    if (state.coins < cost) {
+      $("upgradeError").textContent = "Không đủ COIN để nâng cấp kỹ năng.";
+      return;
+    }
+    state.coins = roundCoin(state.coins - cost);
+    state.skillUpgradeSpent[id] = roundCoin(state.skillUpgradeSpent[id] + cost);
+    state.skillUpgradeLevels[id] += 1;
+    $("upgradeError").textContent = "";
+    updateHud();
+    updateSkillButtons();
+    renderSkillUpgrades();
+    saveGameState();
+    showMessage(`${skillDefs.get(id).name} đã tăng hiệu lực 1,37%`);
   }
 
   function resetGame() {
+    try { localStorage.removeItem(gameStorageKey); }
+    catch (error) { console.error("Không thể xóa tiến trình trận cũ.", error); }
     state.coins = cfg.coinStart;
     state.baseHp = cfg.baseHp;
     state.wave = 0;
@@ -1180,14 +1496,21 @@
     state.nextUnitId = 1;
     state.nextEnemyId = 1;
     state.monsterBonusCounts = Object.fromEntries(cfg.randomMonsterScalingAttributes.map(key => [key, 0]));
+    state.humanUpgradeLevel = 0;
+    state.humanUpgradeTotalSpent = 0;
+    state.skillUpgradeLevels = { heal: 0, burst: 0, freeze: 0 };
+    state.skillUpgradeSpent = { heal: 0, burst: 0, freeze: 0 };
+    state.roundDamageDealt = 0;
     cfg.skills.forEach(skill => { state.skillReadyAt[skill.id] = 0; });
     road.innerHTML = "";
     effectsLayer.innerHTML = "";
     renderUnits();
+    renderEnemies();
     updateHud();
     updateSkillButtons();
     renderSelection();
     showMessage("Sân đã được đặt lại");
+    saveGameState();
   }
 
   waveButton.addEventListener("click", handleWaveButton);
@@ -1195,6 +1518,8 @@
     if (state.countdownUntil > 0 && !state.gameOver) spawnWave();
   });
   modToggle.addEventListener("click", () => setModOpen(true));
+  fullscreenToggle.addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", updateFullscreenToggle);
   $("modClose").addEventListener("click", () => setModOpen(false));
   modOverlay.addEventListener("click", event => { if (event.target === modOverlay) setModOpen(false); });
   modForm.addEventListener("submit", submitModForm);
@@ -1210,8 +1535,20 @@
       idleAnimationStatus.textContent = "Không thể lưu cài đặt; thay đổi chỉ có hiệu lực trong phiên này.";
     }
   });
+  uiTextSizeInput.addEventListener("input", () => {
+    const size = Number(uiTextSizeInput.value);
+    applyUiTextSize(size);
+    try {
+      localStorage.setItem(uiTextSizeStorageKey, String(size));
+      uiTextSizeStatus.textContent = "Đã lưu tự động.";
+    } catch (error) {
+      console.warn("Không thể lưu cỡ chữ giao diện.", error);
+      uiTextSizeStatus.textContent = "Không thể lưu; cỡ chữ chỉ có hiệu lực trong phiên này.";
+    }
+  });
   $("upgradeClose").addEventListener("click", closeUpgrade);
-  $("upgradeApply").addEventListener("click", applyUpgrade);
+  $("upgradeOpen").addEventListener("click", openUpgrade);
+  $("upgradeApply").addEventListener("click", applyHumanUpgrade);
   upgradeOverlay.addEventListener("click", event => { if (event.target === upgradeOverlay) closeUpgrade(); });
   buildModForm();
   renderCards();
@@ -1220,7 +1557,10 @@
   updateHud();
   updateSkillButtons();
   renderUnits();
+  renderEnemies();
+  saveGameState();
   setInterval(() => tick(performance.now()), 100);
+  setInterval(saveGameState, 1000);
   setInterval(() => {
     updateHud();
     updateSkillButtons();

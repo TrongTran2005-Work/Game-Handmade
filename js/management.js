@@ -273,7 +273,7 @@
       }
       const adjusted = applyStoreToConfig(store, baseConfig);
       ["coinStart", "baseHp", "baseRecoveryPercent", "roundCountdownSeconds", "maxEnemiesOnMap",
-        "upgradeCost", "upgradeCostStep", "coinPerRound", "cardSlots"].forEach(key => { cfg[key] = adjusted[key]; });
+        "cardSlots"].forEach(key => { cfg[key] = adjusted[key]; });
       cfg.unitTypes = adjusted.unitTypes;
       cfg.monsters = adjusted.monsters;
       cfg.effects = adjusted.effects;

@@ -12,6 +12,8 @@
     <section class="game-screen" id="gameScreen">
       <div class="battlefield-art" aria-hidden="true"></div>
       <button class="mod-toggle" id="modToggle" type="button" aria-haspopup="dialog" aria-controls="modOverlay">⚙ SETTINGS</button>
+      <button class="fullscreen-toggle" id="fullscreenToggle" type="button"
+        aria-label="Bật toàn màn hình" title="Bật toàn màn hình">⛶</button>
       <div class="road-zone" id="roadZone" aria-label="Khu vực xuất hiện zombie"></div>
       <div class="battle-zone" id="battleZone" aria-label="Khu vực chiến đấu">
         <div class="base-tower" id="baseTower" role="img" aria-label="Trụ phe người">
@@ -114,6 +116,16 @@
               Áp dụng cho tướng và quái; thay đổi được lưu tự động.
             </p>
           </section>
+          <section class="mod-section" aria-labelledby="uiTextSizeTitle">
+            <h2 id="uiTextSizeTitle">HIỂN THỊ</h2>
+            <label class="mod-field animation-frequency" for="uiTextSize">
+              <span>Cỡ chữ giao diện: <output id="uiTextSizeValue" for="uiTextSize">12</output> px</span>
+              <input id="uiTextSize" type="range" min="10" max="16" step="1" value="12">
+            </label>
+            <p class="animation-setting-help" id="uiTextSizeStatus" role="status" aria-live="polite">
+              Dùng nút toàn màn hình để mở rộng game; khung game tự fit màn hình và giữ nguyên tỷ lệ.
+            </p>
+          </section>
         </section>
       </section>
     </div>
@@ -124,20 +136,15 @@
           <button class="mod-close" id="upgradeClose" type="button" aria-label="Đóng nâng cấp">×</button>
         </div>
         <p id="upgradeCharacter"></p>
-        <label class="mod-field" for="upgradeAttribute">Chọn thuộc tính
-          <select id="upgradeAttribute">
-            <option value="hp">HP +10%</option>
-            <option value="atk">ATK +6%</option>
-            <option value="def">DEF +8%</option>
-            <option value="sa">SA +10%</option>
-            <option value="rc">RC +10%</option>
-          </select>
-        </label>
         <p id="upgradeCost"></p>
         <p class="mod-error" id="upgradeError" role="alert"></p>
         <div class="mod-actions">
-          <button class="mod-apply" id="upgradeApply" type="button">UPGRADE</button>
+          <button class="mod-apply" id="upgradeApply" type="button">UPGRADE HUMAN</button>
         </div>
+        <section class="skill-upgrades" aria-labelledby="skillUpgradeTitle">
+          <h2 id="skillUpgradeTitle">NÂNG CẤP KỸ NĂNG</h2>
+          <div id="skillUpgradeList"></div>
+        </section>
       </section>
     </div>
 
@@ -149,7 +156,22 @@
           <span id="baseValue">TRỤ 100%</span>
           <span id="waveValue">ĐỢT 0</span>
         </div>
+        <div class="level-progress" aria-label="Tiến trình vòng">
+          <div class="level-progress-label" id="levelProgressLabel">LV 0 · 0%</div>
+          <div class="level-progress-track" role="progressbar" id="levelProgress"
+            aria-label="Tiến độ tiêu diệt quái" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <i id="levelProgressFill"></i>
+          </div>
+        </div>
+        <div class="damage-progress">
+          <div class="damage-progress-label" id="damageProgressLabel">SÁT THƯƠNG 0 · 0%</div>
+          <div class="damage-progress-track" role="progressbar" id="damageProgress"
+            aria-label="Tổng sát thương đã gây trong vòng" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <i id="damageProgressFill"></i>
+          </div>
+        </div>
         <span class="round-status" id="roundStatus">SẴN SÀNG</span>
+        <button class="upgrade-open-button" id="upgradeOpen" type="button">UPGRADE HUMAN</button>
         <button class="wave-button" id="waveButton" type="button">START</button>
         <button class="skip-button" id="skipButton" type="button" hidden>SKIP · 30</button>
         <div class="helper-text" id="helperText">Chọn tướng rồi chọn ô trên sân</div>

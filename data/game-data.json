@@ -6,15 +6,33 @@
     "roundCountdownSeconds": 30
   },
   "progression": {
-    "coinPerRound": 100,
-    "upgradeCost": 150,
-    "upgradeCostStep": 75,
-    "upgradePercent": {
-      "hp": 10,
-      "atk": 6,
-      "def": 8,
-      "sa": 10,
-      "rc": 10
+    "humanUpgrade": {
+      "startingCost": 25,
+      "costMultiplier": 1.5,
+      "statIncreasePercentPerLevel": 1,
+      "stats": ["hp", "atk", "sa", "rc", "def", "specialDamage"]
+    },
+    "skillUpgrade": {
+      "startingCost": 25,
+      "costMultiplier": 1.5,
+      "effectIncreasePercentPerLevel": 1.37,
+      "skills": ["heal", "burst", "freeze"]
+    },
+    "waveDamageReward": {
+      "percentPerWave": 30,
+      "coinPrecision": 2
+    },
+    "demonRules": {
+      "difficultyMultiplierFromId": true,
+      "difficultyMinimum": 1,
+      "difficultyMaximum": 10,
+      "unlockDemonNumber": 6,
+      "unlockFromLevel": 10,
+      "firstHealthBars": 2,
+      "secondHealthBarDelaySeconds": 0,
+      "waveScreenFlashSeconds": 2,
+      "enemiesPerWaveBeforeLevel10": [3, 5],
+      "enemiesPerWaveFromLevel10": 5
     },
     "postRoundCommonScalingPercent": {
       "atk": 10,
