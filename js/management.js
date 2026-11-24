@@ -2,7 +2,7 @@
   "use strict";
   const cfg = window.LAST_BLOOM_CONFIG;
   const storageKey = "lastBloomManagedGameDataV1";
-  const maxNumber = 1000000;
+  const maxNumber = 99999999999999999999999;
   const supportedEffects = [
     "STUN", "LIFESTEAL", "ARMOR_REDUCTION", "HEALING_REDUCTION", "SLOW", "TEAM_HEAL",
     "CRITICAL", "ARMOR_PENETRATION", "SLOW_RESISTANCE", "CLR", "RATK", "RDEF"

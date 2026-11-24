@@ -162,10 +162,10 @@
   }
   const defaultModSettings = readModSettings();
   const previousSkillDefaults = {
-    heal: { cost: 40, cooldown: 18 },
-    burst: { cost: 60, cooldown: 22 },
-    freeze: { cost: 50, cooldown: 25 },
-    coin: { cost: 0, cooldown: 30 }
+    heal: { cost: 5, cooldown: 5 },
+    burst: { cost: 0, cooldown: 0.07589 },
+    freeze: { cost: 0, cooldown: 7 },
+    coin: { cost: 0, cooldown: 3 }
   };
   function migrateStoredSkillDefaults(settings) {
     if (!settings || !settings.skills || typeof settings.skills !== "object" || Array.isArray(settings.skills)) {
@@ -187,17 +187,17 @@
   }
   function isValidModSettings(settings) {
     const values = settings && [settings.coinStart, settings.baseHp];
-    if (!values || !values.every(value => Number.isFinite(value) && value >= 0 && value <= 1000000) || settings.baseHp === 0) return false;
+    if (!values || !values.every(value => Number.isFinite(value) && value >= 0 && value <= 99999999999999999999999) || settings.baseHp === 0) return false;
     return cfg.skills.every(skill => {
       const current = settings.skills && settings.skills[skill.id];
       return current && [current.cost, current.cooldown, current.value]
-        .every(value => Number.isFinite(value) && value >= 0 && value <= 1000000);
+        .every(value => Number.isFinite(value) && value >= 0 && value <= 99999999999999999999999);
     }) && cfg.effects.every(effect => {
       const current = settings.effects && settings.effects[effect.id];
       const values = current && [current.value, current.duration, current.cooldown, current.chance];
-      return values && values.every(value => Number.isFinite(value) && value >= 0 && value <= 1000000) &&
+      return values && values.every(value => Number.isFinite(value) && value >= 0 && value <= 99999999999999999999999) &&
         current.chance <= 1 && (!Number.isFinite(effect.multiplier) ||
-          Number.isFinite(current.multiplier) && current.multiplier >= 0 && current.multiplier <= 1000000);
+          Number.isFinite(current.multiplier) && current.multiplier >= 0 && current.multiplier <= 99999999999999999999999);
     });
   }
   function mergeStoredModSettings(settings) {
