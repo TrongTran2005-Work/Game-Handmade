@@ -36,6 +36,8 @@ Bản game HTML5/CSS3/JavaScript chạy trực tiếp trên trình duyệt, khô
 - Tần suất hiệu ứng nhấp nhô của tướng và quái chỉnh được từ 0,3–3 lần/giây trong GAME SETTINGS; lựa chọn được áp dụng tức thì và lưu tự động.
 - Khung game tự căn vừa màn hình, giữ tỷ lệ 16:9; nút ⛶ bật/tắt toàn màn hình. Cỡ chữ giao diện có thể chỉnh 10–16 px trong GAME SETTINGS và được lưu tự động.
 - Dữ liệu tùy chỉnh lưu riêng trong Local Storage của trình duyệt. Chọn **ÁP DỤNG CHO TRẬN MỚI** để tải lại và nạp cấu hình; nếu đang có trận, game sẽ hỏi xác nhận trước khi tải lại.
+- Tiến trình được tự động lưu trên thiết bị và tự tải khi mở lại game; có 5 slot độc lập trong GAME SETTINGS, mỗi slot hỗ trợ tạo/khôi phục backup và xuất/nhập JSON. File nhập được kiểm tra trước khi thay thế tiến trình.
+- Nút **XÓA MỌI DỮ LIỆU & CHƠI LẠI** xóa tiến trình, backup, cấu hình tùy chỉnh và cài đặt LAST BLOOM trên thiết bị sau khi xác nhận. Bản lưu tiến trình cũ được tự chuyển sang Slot 1 khi nâng cấp.
 
 ## Gameplay và hiệu ứng
 - Lưới 12 × 8 = 96 ô, hitbox đặt tướng 1 × 2.

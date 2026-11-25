@@ -126,6 +126,31 @@
               Dùng nút toàn màn hình để mở rộng game; khung game tự fit màn hình và giữ nguyên tỷ lệ.
             </p>
           </section>
+          <section class="mod-section save-management" aria-labelledby="saveManagementTitle">
+            <h2 id="saveManagementTitle">TIẾN TRÌNH & SAO LƯU CỤC BỘ</h2>
+            <p class="animation-setting-help">Dữ liệu chỉ lưu trên thiết bị này. Game tự lưu và tự tải khi mở lại; chọn slot khác để chơi một tiến trình riêng.</p>
+            <label class="mod-field save-slot-field" for="saveSlotSelect">
+              <span>Slot đang dùng</span>
+              <select id="saveSlotSelect">
+                <option value="slot-1">Slot 1</option>
+                <option value="slot-2">Slot 2</option>
+                <option value="slot-3">Slot 3</option>
+                <option value="slot-4">Slot 4</option>
+                <option value="slot-5">Slot 5</option>
+              </select>
+            </label>
+            <p class="animation-setting-help" id="saveSlotDetails" role="status" aria-live="polite"></p>
+            <p class="animation-setting-help" id="saveStatus" role="status" aria-live="polite">Tiến trình được lưu tự động trên thiết bị.</p>
+            <p class="animation-setting-help" id="backupStatus" role="status" aria-live="polite"></p>
+            <div class="save-actions">
+              <button class="mod-apply" id="saveBackupCreate" type="button">TẠO BACKUP</button>
+              <button class="mod-reset" id="saveBackupRestore" type="button">KHÔI PHỤC BACKUP</button>
+              <button class="mod-reset" id="saveExport" type="button">XUẤT JSON</button>
+              <button class="mod-reset" id="saveImportButton" type="button">NHẬP JSON</button>
+              <input id="saveImportFile" type="file" accept=".json,application/json" hidden>
+              <button class="management-delete" id="saveClearAll" type="button">XÓA MỌI DỮ LIỆU & CHƠI LẠI</button>
+            </div>
+          </section>
         </section>
       </section>
     </div>

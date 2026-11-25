@@ -53,7 +53,18 @@
   const modStorageKey = "lastBloomModSettings";
   const idleAnimationStorageKey = "lastBloomIdleAnimationFrequency";
   const uiTextSizeStorageKey = "lastBloomUiTextSize";
-  const gameStorageKey = "lastBloomGameProgressV1";
+  const legacyGameStorageKey = "lastBloomGameProgressV1";
+  const saveSlotIds = ["slot-1", "slot-2", "slot-3", "slot-4", "slot-5"];
+  const activeSaveSlotStorageKey = "lastBloomActiveSaveSlotV1";
+  const gameStorageKeyForSlot = slotId => `lastBloomGameProgressV2_${slotId}`;
+  const backupStorageKeyForSlot = slotId => `lastBloomGameBackupV1_${slotId}`;
+  let activeSaveSlotId = "slot-1";
+  try {
+    const storedSlotId = localStorage.getItem(activeSaveSlotStorageKey);
+    if (saveSlotIds.includes(storedSlotId)) activeSaveSlotId = storedSlotId;
+  } catch (error) {
+    console.warn("Không thể đọc slot lưu đang dùng.", error);
+  }
 
   function applyIdleAnimationFrequency(frequency) {
     const roundedFrequency = Math.round(frequency * 10) / 10;
@@ -267,7 +278,7 @@
     return window.confirm("Áp dụng cấu hình sẽ tải lại game và kết thúc trận hiện tại. Tiếp tục?");
   };
   cfg.skills.forEach(skill => { state.skillReadyAt[skill.id] = 0; });
-  try { state.bestWave = Number(localStorage.getItem("lastBloomBestWave") || 0); } catch (_) {}
+  migrateLegacyGameSave();
   restoreGameState();
 
   function roundCoin(amount) {
@@ -291,13 +302,29 @@
     return skill.value * Math.pow(cfg.skillUpgradeEffectMultiplier, state.skillUpgradeLevels[skill.id] || 0);
   }
   function isValidEntitySnapshot(entity, kind) {
+    if (!entity || typeof entity !== "object" || Array.isArray(entity) || entity.kind !== kind) return false;
     const typeExists = kind === "unit" ? unitDefs.has(entity.type) : monsterDefs.has(entity.type);
     const stats = ["hp", "maxHp", "atk", "sa", "rc", "def", "specialDamage"];
-    return entity && entity.kind === kind && typeExists &&
-      Number.isInteger(kind === "unit" ? entity.uid : entity.eid) &&
+    const validSkillTimers = entity.skillReadyAt && typeof entity.skillReadyAt === "object" &&
+      !Array.isArray(entity.skillReadyAt) &&
+      Object.values(entity.skillReadyAt).every(value => Number.isFinite(value) && value >= 0);
+    const validEffects = Array.isArray(entity.effects) && entity.effects.length <= 100 &&
+      entity.effects.every(effect => effect && effectDefs.has(effect.id) &&
+        Number.isFinite(effect.value) && Number.isFinite(effect.remaining) && effect.remaining >= 0 &&
+        ["HUMAN", "DEMON"].includes(effect.sourceFaction));
+    const validLocation = kind === "unit"
+      ? Number.isInteger(entity.col) && entity.col >= 0 && entity.col < cfg.columns &&
+        Number.isInteger(entity.row) && entity.row >= 0 && entity.row + 1 < cfg.rows
+      : Number.isInteger(entity.lane) && entity.lane >= 0 && entity.lane < cfg.columns &&
+        [1, 2].includes(entity.phase) && typeof entity.defeated === "boolean" &&
+        typeof entity.rewarded === "boolean" && Number.isFinite(entity.coinReward) && entity.coinReward >= 0;
+    return typeExists && Number.isInteger(kind === "unit" ? entity.uid : entity.eid) &&
       stats.every(key => Number.isFinite(entity[key]) && entity[key] >= 0) &&
       entity.maxHp > 0 && entity.hp <= entity.maxHp &&
-      Array.isArray(entity.skillIds) && Array.isArray(entity.effects);
+      Array.isArray(entity.skillIds) && entity.skillIds.every(id => typeof id === "string" && effectDefs.has(id)) &&
+      validSkillTimers && validEffects && validLocation &&
+      ["nextAttackAt", "nextHealAt", "nextSpecialAt"].every(key =>
+        Number.isFinite(entity[key]) && entity[key] >= 0);
   }
   function saveEntitySnapshot(entity, now) {
     const snapshot = JSON.parse(JSON.stringify(entity));
@@ -327,6 +354,36 @@
     });
     return entity;
   }
+  function isValidGameSnapshot(saved) {
+    return Boolean(saved && saved.version === 1 && Number.isFinite(saved.coins) && saved.coins >= 0 &&
+      Number.isFinite(saved.baseHp) && saved.baseHp >= 0 && Number.isInteger(saved.wave) && saved.wave >= 0 &&
+      Array.isArray(saved.units) && Array.isArray(saved.enemies) &&
+      saved.units.length <= 200 && saved.enemies.length <= 100 &&
+      saved.units.every(entity => isValidEntitySnapshot(entity, "unit")) &&
+      saved.enemies.every(entity => isValidEntitySnapshot(entity, "enemy")) &&
+      Number.isInteger(saved.humanUpgradeLevel) && saved.humanUpgradeLevel >= 0 &&
+      saved.humanUpgradeLevel <= 1000 &&
+      Number.isFinite(saved.humanUpgradeTotalSpent) && saved.humanUpgradeTotalSpent >= 0);
+  }
+  function migrateLegacyGameSave() {
+    try {
+      const slotOneSave = localStorage.getItem(gameStorageKeyForSlot("slot-1"));
+      if (slotOneSave === null && activeSaveSlotId === "slot-1") {
+        const legacyBestWave = Number(localStorage.getItem("lastBloomBestWave"));
+        if (Number.isInteger(legacyBestWave) && legacyBestWave >= 0) {
+          state.bestWave = Math.max(state.bestWave, legacyBestWave);
+        }
+      }
+      if (slotOneSave !== null) return;
+      const legacySave = localStorage.getItem(legacyGameStorageKey);
+      if (legacySave === null) return;
+      const parsed = JSON.parse(legacySave);
+      if (!isValidGameSnapshot(parsed)) throw new Error("Bản lưu cũ không hợp lệ.");
+      localStorage.setItem(gameStorageKeyForSlot("slot-1"), legacySave);
+    } catch (error) {
+      console.error("Không thể chuyển bản lưu cũ sang Slot 1; dữ liệu gốc vẫn được giữ nguyên.", error);
+    }
+  }
   function saveGameState() {
     const now = performance.now();
     const snapshot = {
@@ -353,23 +410,23 @@
       units: state.units.map(unit => saveEntitySnapshot(unit, now)),
       enemies: state.enemies.map(enemy => saveEntitySnapshot(enemy, now))
     };
-    try { localStorage.setItem(gameStorageKey, JSON.stringify(snapshot)); }
-    catch (error) { console.error("Không thể lưu tiến trình trận đấu.", error); }
+    try {
+      localStorage.setItem(gameStorageKeyForSlot(activeSaveSlotId), JSON.stringify(snapshot));
+      const status = $("saveStatus");
+      if (status) status.textContent = `Đã tự động lưu ${activeSaveSlotId.replace("slot-", "Slot ")} trên thiết bị này.`;
+      updateSaveManagement();
+    } catch (error) {
+      console.error("Không thể lưu tiến trình trận đấu.", error);
+      const status = $("saveStatus");
+      if (status) status.textContent = "Không thể lưu tiến trình. Hãy giải phóng dung lượng trình duyệt và tạo bản xuất JSON.";
+    }
   }
   function restoreGameState() {
     try {
-      const raw = localStorage.getItem(gameStorageKey);
+      const raw = localStorage.getItem(gameStorageKeyForSlot(activeSaveSlotId));
       if (!raw) return;
       const saved = JSON.parse(raw);
-      if (!saved || saved.version !== 1 || !Number.isFinite(saved.coins) || saved.coins < 0 ||
-          !Number.isFinite(saved.baseHp) || saved.baseHp < 0 || !Number.isInteger(saved.wave) ||
-          saved.wave < 0 || !Array.isArray(saved.units) || !Array.isArray(saved.enemies) ||
-          saved.units.length > 200 || saved.enemies.length > 100 ||
-          !saved.units.every(entity => isValidEntitySnapshot(entity, "unit")) ||
-          !saved.enemies.every(entity => isValidEntitySnapshot(entity, "enemy")) ||
-          !Number.isInteger(saved.humanUpgradeLevel) || saved.humanUpgradeLevel < 0 ||
-          saved.humanUpgradeLevel > 1000 ||
-          !Number.isFinite(saved.humanUpgradeTotalSpent) || saved.humanUpgradeTotalSpent < 0) {
+      if (!isValidGameSnapshot(saved)) {
         throw new Error("Dữ liệu trận đấu đã lưu không hợp lệ.");
       }
       const now = performance.now();
@@ -411,8 +468,143 @@
       state.nextEnemyId = Math.max(state.nextEnemyId, ...state.enemies.map(enemy => enemy.eid + 1));
     } catch (error) {
       console.error("Không thể khôi phục tiến trình trận đấu đã lưu.", error);
-      try { localStorage.removeItem(gameStorageKey); }
+      try { localStorage.removeItem(gameStorageKeyForSlot(activeSaveSlotId)); }
       catch (removeError) { console.error("Không thể xóa tiến trình trận đấu lỗi.", removeError); }
+    }
+  }
+  function updateSaveManagement() {
+    const slotSelect = $("saveSlotSelect");
+    if (!slotSelect) return;
+    slotSelect.value = activeSaveSlotId;
+    try {
+      const currentSave = localStorage.getItem(gameStorageKeyForSlot(activeSaveSlotId));
+      $("saveSlotDetails").textContent = currentSave
+        ? `Slot này có tiến trình đã lưu${state.wave ? ` · Đợt ${state.wave}` : ""}.`
+        : "Slot này chưa có tiến trình; bắt đầu chơi sẽ tạo bản lưu mới.";
+      const backupText = localStorage.getItem(backupStorageKeyForSlot(activeSaveSlotId));
+      const restoreButton = $("saveBackupRestore");
+      if (!backupText) {
+        $("backupStatus").textContent = "Chưa có backup cho slot này.";
+        restoreButton.disabled = true;
+      } else {
+        const backup = JSON.parse(backupText);
+        $("backupStatus").textContent = `Backup gần nhất: ${new Date(backup.createdAt).toLocaleString("vi-VN")}.`;
+        restoreButton.disabled = false;
+      }
+    } catch (error) {
+      console.error("Không thể đọc thông tin slot hoặc backup.", error);
+      $("saveSlotDetails").textContent = "Không thể đọc dữ liệu slot.";
+      $("backupStatus").textContent = "Không thể đọc backup.";
+      $("saveBackupRestore").disabled = true;
+    }
+  }
+  function confirmReplacingProgress(action) {
+    if (state.wave === 0 && state.units.length === 0 && state.enemies.length === 0) return true;
+    return window.confirm(`${action} sẽ thay thế tiến trình hiện tại. Tiếp tục?`);
+  }
+  function createSaveBackup() {
+    try {
+      saveGameState();
+      const raw = localStorage.getItem(gameStorageKeyForSlot(activeSaveSlotId));
+      const snapshot = raw && JSON.parse(raw);
+      if (!isValidGameSnapshot(snapshot)) throw new Error("Không có tiến trình hợp lệ để sao lưu.");
+      localStorage.setItem(backupStorageKeyForSlot(activeSaveSlotId), JSON.stringify({
+        version: 1, createdAt: Date.now(), save: snapshot
+      }));
+      updateSaveManagement();
+      showMessage("Đã tạo backup cho slot hiện tại");
+    } catch (error) {
+      console.error("Không thể tạo backup tiến trình.", error);
+      $("backupStatus").textContent = `Không thể tạo backup: ${error.message}`;
+    }
+  }
+  function restoreSaveBackup() {
+    if (!confirmReplacingProgress("Khôi phục backup")) return;
+    try {
+      const backup = JSON.parse(localStorage.getItem(backupStorageKeyForSlot(activeSaveSlotId)) || "null");
+      if (!backup || backup.version !== 1 || !isValidGameSnapshot(backup.save)) {
+        throw new Error("Backup không hợp lệ hoặc không tồn tại.");
+      }
+      localStorage.setItem(gameStorageKeyForSlot(activeSaveSlotId), JSON.stringify(backup.save));
+      location.reload();
+    } catch (error) {
+      console.error("Không thể khôi phục backup.", error);
+      $("backupStatus").textContent = `Không thể khôi phục backup: ${error.message}`;
+    }
+  }
+  function exportSaveJson() {
+    try {
+      saveGameState();
+      const raw = localStorage.getItem(gameStorageKeyForSlot(activeSaveSlotId));
+      const snapshot = raw && JSON.parse(raw);
+      if (!isValidGameSnapshot(snapshot)) throw new Error("Không có tiến trình hợp lệ để xuất.");
+      const contents = JSON.stringify({
+        format: "LAST_BLOOM_SAVE", formatVersion: 1, exportedAt: new Date().toISOString(),
+        save: snapshot
+      }, null, 2);
+      const url = URL.createObjectURL(new Blob([contents], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `last-bloom-${activeSaveSlotId}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      $("saveStatus").textContent = "Đã xuất tiến trình thành file JSON.";
+    } catch (error) {
+      console.error("Không thể xuất tiến trình.", error);
+      $("saveStatus").textContent = `Không thể xuất JSON: ${error.message}`;
+    }
+  }
+  async function importSaveJson(file) {
+    try {
+      if (file.size > 5 * 1024 * 1024) throw new Error("File JSON vượt quá giới hạn 5 MB.");
+      const parsed = JSON.parse(await file.text());
+      const snapshot = parsed && parsed.format === "LAST_BLOOM_SAVE" && parsed.formatVersion === 1
+        ? parsed.save : parsed;
+      if (!isValidGameSnapshot(snapshot)) throw new Error("File không chứa tiến trình LAST BLOOM hợp lệ.");
+      if (!confirmReplacingProgress("Nhập tiến trình")) return;
+      localStorage.setItem(gameStorageKeyForSlot(activeSaveSlotId), JSON.stringify(snapshot));
+      location.reload();
+    } catch (error) {
+      console.error("Không thể nhập tiến trình.", error);
+      $("saveStatus").textContent = `Không thể nhập JSON: ${error.message}`;
+    } finally {
+      $("saveImportFile").value = "";
+    }
+  }
+  function clearAllLocalGameData() {
+    const accepted = window.confirm(
+      "Xóa toàn bộ tiến trình, backup, nhân vật/mod tùy chỉnh và cài đặt đã lưu trên thiết bị này, rồi chơi lại từ đầu? Thao tác này không thể hoàn tác."
+    );
+    if (!accepted) return;
+    try {
+      const keys = [
+        legacyGameStorageKey, "lastBloomBestWave", activeSaveSlotStorageKey,
+        "lastBloomManagedGameDataV1", modStorageKey, idleAnimationStorageKey, uiTextSizeStorageKey,
+        ...saveSlotIds.flatMap(slotId => [
+          gameStorageKeyForSlot(slotId), backupStorageKeyForSlot(slotId)
+        ])
+      ];
+      keys.forEach(key => localStorage.removeItem(key));
+      location.reload();
+    } catch (error) {
+      console.error("Không thể xóa toàn bộ dữ liệu game.", error);
+      $("saveStatus").textContent = "Không thể xóa hết dữ liệu đã lưu. Hãy kiểm tra quyền lưu trữ của trình duyệt.";
+    }
+  }
+  function changeSaveSlot(slotId) {
+    if (!saveSlotIds.includes(slotId)) return;
+    if (!confirmReplacingProgress("Chuyển slot")) {
+      $("saveSlotSelect").value = activeSaveSlotId;
+      return;
+    }
+    try {
+      saveGameState();
+      localStorage.setItem(activeSaveSlotStorageKey, slotId);
+      location.reload();
+    } catch (error) {
+      console.error("Không thể chuyển slot lưu.", error);
+      $("saveStatus").textContent = "Không thể đổi slot do trình duyệt không lưu được cài đặt.";
+      $("saveSlotSelect").value = activeSaveSlotId;
     }
   }
 
@@ -1479,7 +1671,7 @@
   }
 
   function resetGame() {
-    try { localStorage.removeItem(gameStorageKey); }
+    try { localStorage.removeItem(gameStorageKeyForSlot(activeSaveSlotId)); }
     catch (error) { console.error("Không thể xóa tiến trình trận cũ.", error); }
     state.coins = cfg.coinStart;
     state.baseHp = cfg.baseHp;
@@ -1524,6 +1716,16 @@
   modOverlay.addEventListener("click", event => { if (event.target === modOverlay) setModOpen(false); });
   modForm.addEventListener("submit", submitModForm);
   $("modReset").addEventListener("click", resetModSettings);
+  $("saveSlotSelect").addEventListener("change", event => changeSaveSlot(event.target.value));
+  $("saveBackupCreate").addEventListener("click", createSaveBackup);
+  $("saveBackupRestore").addEventListener("click", restoreSaveBackup);
+  $("saveExport").addEventListener("click", exportSaveJson);
+  $("saveImportButton").addEventListener("click", () => $("saveImportFile").click());
+  $("saveImportFile").addEventListener("change", event => {
+    const file = event.target.files && event.target.files[0];
+    if (file) importSaveJson(file);
+  });
+  $("saveClearAll").addEventListener("click", clearAllLocalGameData);
   idleAnimationFrequencyInput.addEventListener("input", () => {
     const frequency = Number(idleAnimationFrequencyInput.value);
     applyIdleAnimationFrequency(frequency);
@@ -1559,6 +1761,7 @@
   renderUnits();
   renderEnemies();
   saveGameState();
+  updateSaveManagement();
   setInterval(() => tick(performance.now()), 100);
   setInterval(saveGameState, 1000);
   setInterval(() => {
