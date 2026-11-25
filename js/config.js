@@ -6,7 +6,7 @@ window.LAST_BLOOM_CONFIG = {
   roadHeight: 28.5,
   gridTop: 28.5,
   baseTower: { asset: "assets/town/hometown.gif", col: 5, row: 6, columns: 2, rows: 2 },
-  coinStart: 7777,
+  coinStart: 8888,
   baseHp: 8000,
   baseRecoveryPercent: 300,
   roundCountdownSeconds: 25,
@@ -33,12 +33,12 @@ window.LAST_BLOOM_CONFIG = {
     { id: "C6", name: "Dirack", faction: "HUMAN", asset: "assets/character/C6.png", normalAsset: "assets/character/C6_N.png", ultimateAsset: "assets/character/C6_U.png", cost: 3250, hp: 1150, atk: 150, sa: 0.44, rc: 250, def: 38, specialDamage: 5200, specialInterval: 10, range: 50, skillIds: ["ARMOR_REDUCTION", "CRITICAL", "ARMOR_PENETRATION", "RDEF"] },
     { id: "C2", name: "Water Queen", faction: "HUMAN", asset: "assets/character/C2.gif", normalAsset: "assets/character/C2_N.png", ultimateAsset: "assets/character/C2_U.png", cost: 500, hp: 2100, atk: 83, sa: 1.11, rc: 110, def: 7, specialDamage: 120, specialInterval: 3, range: 5, skillIds: ["ARMOR_REDUCTION", "HEALING_REDUCTION", "SLOW", "TEAM_HEAL", "RDEF"] },
     { id: "C10", name: "Anh Kiệt - 英杰", faction: "HUMAN", asset: "assets/character/C10.gif", normalAsset: "assets/character/C10_N.gif", ultimateAsset: "assets/character/C10_U.gif", cost: 3500, hp: 5500, atk: 950, sa: 1.07, rc: 250, def: 110, specialDamage: 3500, specialInterval: 7, range: 12, skillIds: ["LIFESTEAL", "ARMOR_REDUCTION", "HEALING_REDUCTION", "SLOW", "ARMOR_PENETRATION"] },
-    { id: "C8", name: "Jendas", faction: "HUMAN", asset: "assets/character/C8.gif", normalAsset: "assets/character/C8_N.gif", ultimateAsset: "assets/character/C8_U.gif", cost: 6999, hp: 3500, atk: 750, sa: 1.3, rc: 250, def: 148, specialDamage: 6946, specialInterval: 15, range: 80, skillIds: ["STUN", "LIFESTEAL", "ARMOR_PENETRATION"] },
+    { id: "C8", name: "Jendas", faction: "HUMAN", asset: "assets/character/C8.gif", normalAsset: "assets/character/C8_N.gif", ultimateAsset: "assets/character/C8_U.gif", cost: 12999, hp: 3500, atk: 750, sa: 1.3, rc: 250, def: 148, specialDamage: 20646, specialInterval: 15, range: 80, skillIds: ["STUN", "LIFESTEAL", "ARMOR_PENETRATION"] },
     { id: "C9", name: "Nguyệt Dao - 月瑶", faction: "HUMAN", asset: "assets/character/C9.gif", normalAsset: "assets/character/C9_N.gif", ultimateAsset: "assets/character/C9_U.gif", cost: 2500, hp: 4650, atk: 619, sa: 1.3, rc: 143, def: 121, specialDamage: 1650, specialInterval: 5, range: 12, skillIds: ["ARMOR_REDUCTION", "SLOW", "CRITICAL", "ARMOR_PENETRATION"] },
-    { id: "C3", name: "Iron Warrior", faction: "HUMAN", asset: "assets/character/C3.png", normalAsset: "assets/character/C3_N.png", ultimateAsset: "assets/character/C3_U.png", cost: 105, hp: 2450, atk: 50, sa: 0.61, rc: 150, def: 80, specialDamage: 505, specialInterval: 4, range: 4, skillIds: ["LIFESTEAL", "ARMOR_REDUCTION", "RDEF"] },
-    { id: "C4", name: "Master Michel", faction: "HUMAN", asset: "assets/character/C4.png", normalAsset: "assets/character/C4_N.png", ultimateAsset: "assets/character/C4_U.png", cost: 150, hp: 125, atk: 20, sa: 0.95, rc: 195, def: 6, specialDamage: 210, specialInterval: 7, range: 6, skillIds: ["TEAM_HEAL", "SLOW_RESISTANCE", "CLR"] },
+    { id: "C3", name: "Iron Warrior", faction: "HUMAN", asset: "assets/character/C3.png", normalAsset: "assets/character/C3_N.png", ultimateAsset: "assets/character/C3_U.png", cost: 380, hp: 4450, atk: 150, sa: 0.61, rc: 150, def: 280, specialDamage: 505, specialInterval: 4, range: 4, skillIds: ["LIFESTEAL", "ARMOR_REDUCTION", "RDEF"] },
+    { id: "C4", name: "Master Michel", faction: "HUMAN", asset: "assets/character/C4.png", normalAsset: "assets/character/C4_N.png", ultimateAsset: "assets/character/C4_U.png", cost: 550, hp: 125, atk: 80, sa: 0.95, rc: 195, def: 6, specialDamage: 210, specialInterval: 7, range: 6, skillIds: ["TEAM_HEAL", "SLOW_RESISTANCE", "CLR"] },
     { id: "C7", name: "Vương Nhất Quân", faction: "HUMAN", asset: "assets/character/C7.gif", normalAsset: "assets/character/C7_N.gif", ultimateAsset: "assets/character/C7_U.png", cost: 9999, hp: 7200, atk: 666, sa: 1.78, rc: 444, def: 333, specialDamage: 3333, specialInterval: 6, range: 15, skillIds: ["ARMOR_REDUCTION", "CRITICAL", "ARMOR_PENETRATION", "SLOW_RESISTANCE", "CLR", "RDEF"] },
-    { id: "C5", name: "David Dame", faction: "HUMAN", asset: "assets/character/C5.png", normalAsset: "assets/character/C5_N.png", ultimateAsset: "assets/character/C5_U.png", cost: 150, hp: 330, atk: 200, sa: 1.65, rc: 275, def: 22, specialDamage: 135, specialInterval: 2, range: 2, skillIds: ["STUN", "RATK"], additionalValue: 150 }
+    { id: "C5", name: "David Dame", faction: "HUMAN", asset: "assets/character/C5.png", normalAsset: "assets/character/C5_N.png", ultimateAsset: "assets/character/C5_U.png", cost: 350, hp: 330, atk: 200, sa: 1.65, rc: 275, def: 22, specialDamage: 135, specialInterval: 2, range: 2, skillIds: ["STUN", "RATK"], additionalValue: 150 }
   ],
   cardSlots: [ "C3", "C4", "C5",  "C6", "C1", "C2", "C7", "C8","C9", "C10"],
   effects: [
@@ -56,9 +56,9 @@ window.LAST_BLOOM_CONFIG = {
     { id: "RDEF", name: "Giảm DEF", deployment: "PROJECTILE", userFaction: "BOTH", targetFaction: "OPPONENT", impact: "TARGET", effect: "RDEF", value: 10, duration: 4, cooldown: 8, chance: 0.4, speed: 380, size: 12, radius: 0 }
   ],
   skills: [
-    { id: "heal", name: "Hồi phục", asset: "assets/skills/heal.svg", cost: 0, cooldown: 5, value: 1000, description: "Hồi HP cho tất cả tướng" },
-    { id: "coin", name: "Tiếp tế", asset: "assets/skills/essence.svg", cost: 0, cooldown: 9, value: 1000, description: "Nhận thêm COIN" },
-    { id: "freeze", name: "Đóng băng", asset: "assets/skills/freeze.svg", cost: 0, cooldown: 10, value: 5, description: "Choáng quái trong vùng" },
-    { id: "burst", name: "Bộc phá", asset: "assets/skills/burst.svg", cost: 0, cooldown: 0.7589, value: 750, description: "Gây sát thương lên mọi quái" }
+    { id: "heal", name: "Hồi phục", asset: "assets/skills/heal.svg", cost: 0, cooldown: 7, value: 1500, description: "Hồi HP cho tất cả tướng" },
+    { id: "coin", name: "Tiếp tế", asset: "assets/skills/essence.svg", cost: 0, cooldown: 24, value: 5000, description: "Nhận thêm COIN" },
+    { id: "freeze", name: "Đóng băng", asset: "assets/skills/freeze.svg", cost: 0, cooldown: 7, value: 5, description: "Choáng quái trong vùng" },
+    { id: "burst", name: "Bộc phá", asset: "assets/skills/burst.svg", cost: 0, cooldown: 0.059, value: 1050, description: "Gây sát thương lên mọi quái" }
   ]
 };
